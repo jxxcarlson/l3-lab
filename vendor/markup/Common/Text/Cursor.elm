@@ -266,10 +266,6 @@ contractStack stack =
                     stack
 
                 Just text_ ->
-                    let
-                        _ =
-                            Debug.log "ACTION" "contract stack, scanPoint"
-                    in
                     text_ :: rest
 
         _ ->
@@ -292,10 +288,6 @@ contractStackRepeatedly stack =
                     stack
 
                 Just text_ ->
-                    let
-                        _ =
-                            Debug.log "ACTION" "contract stack, scanPoint"
-                    in
                     text_ :: rest
 
         text1 :: text2 :: rest ->
@@ -304,10 +296,6 @@ contractStackRepeatedly stack =
                     stack
 
                 Just text_ ->
-                    let
-                        _ =
-                            Debug.log "ACTION" "contract stack, scanPoint"
-                    in
                     contractStackRepeatedly (text_ :: rest)
 
         _ ->
