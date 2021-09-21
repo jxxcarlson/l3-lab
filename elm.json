@@ -2,7 +2,7 @@
     "type": "application",
     "source-directories": [
         "src",
-        "vendor"
+        "vendor/markup"
     ],
     "elm-version": "0.19.1",
     "dependencies": {
@@ -36,6 +36,7 @@
             "lamdera/core": "1.0.0",
             "mdgriffith/elm-ui": "1.1.8",
             "romariolopezc/elm-hmac-sha1": "3.0.0",
+            "rtfeldman/console-print": "1.0.1",
             "rtfeldman/elm-hex": "1.0.0"
         },
         "indirect": {

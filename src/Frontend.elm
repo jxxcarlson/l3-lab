@@ -12,12 +12,9 @@ import Frontend.Cmd
 import Frontend.PDF as PDF
 import Frontend.Update
 import Html exposing (Html)
-import L1.API
-import L1.Parser.AST
-import L1.Render.LaTeX
-import L1.Render.Markdown
 import Lamdera exposing (sendToBackend)
 import List.Extra
+import Markup.API
 import Process
 import Task
 import Types exposing (..)
@@ -204,10 +201,11 @@ update msg model =
                 document =
                     model.currentDocument
 
+                ast =
+                    Markup.API.parse document.language 0 (String.lines document.content)
+
                 newTitle =
-                    -- TODO:implement this
-                    --- L1.Parser.AST.getTitle str
-                    "New doc"
+                    Markup.API.getTitle document.language ast |> Maybe.withDefault "Untitled"
 
                 newSlug =
                     Maybe.map (Document.changeSlug newTitle) document.slug |> Maybe.withDefault "SLUG"

@@ -1,6 +1,6 @@
 module Markup.API exposing
-    ( compile, Language(..), Settings
-    , parseMiniLaTeX
+    ( compile, Settings
+    , getTitle, parse, prepareForExport
     )
 
 {-| The function Markup.API.compile will transform source text in any
@@ -10,6 +10,7 @@ one of three markup languages (L1, Markdown, MiniLaTeX) to `Html msg`.
 
 -}
 
+import Common.Library.ASTTools
 import Common.Render exposing (Settings)
 import Common.Syntax as Syntax exposing (Meta, Text(..))
 import Common.Text.Cursor as Cursor
@@ -23,24 +24,17 @@ import MiniLaTeX.Rule
 
 
 {-| -}
-compile : Language -> Int -> Settings -> List String -> List (Element msg)
+compile : Syntax.Language -> Int -> Settings -> List String -> List (Element msg)
 compile language generation settings lines =
     case language of
-        L1 ->
+        Syntax.L1 ->
             compileL1 generation settings lines
 
-        Markdown ->
+        Syntax.Markdown ->
             compileMarkdown generation settings lines
 
-        MiniLaTeX ->
+        Syntax.MiniLaTeX ->
             compileMiniLaTeX generation settings lines
-
-
-{-| -}
-type Language
-    = L1
-    | Markdown
-    | MiniLaTeX
 
 
 {-| -}
@@ -48,11 +42,38 @@ type alias Settings =
     { width : Int }
 
 
+prepareForExport : String -> ( List String, String )
+prepareForExport str =
+    ( [ "image urls" ], "document content" )
+
+
+parse : Syntax.Language -> Int -> List String -> List Syntax.TextBlock
+parse language generation lines =
+    case language of
+        Syntax.Markdown ->
+            lines |> Markdown.parse generation |> List.map (Syntax.map markdownParseLoop)
+
+        Syntax.MiniLaTeX ->
+            lines |> MiniLaTeX.parse generation |> List.map (Syntax.map miniLaTeXParseLoop)
+
+        Syntax.L1 ->
+            lines |> MiniLaTeX.parse generation |> List.map (Syntax.map (Common.Text.Parser.dummyParse generation { width = 500 }))
+
+
+getTitle : Syntax.Language -> List Syntax.TextBlock -> Maybe String
+getTitle =
+    Common.Library.ASTTools.getTitle
+
+
+
+-- NOT EXPOSED
+
+
 compileMarkdown : Int -> Settings -> List String -> List (Element msg)
 compileMarkdown generation settings lines =
     lines
         |> Markdown.parse generation
-        |> List.map (Syntax.map2 markdownParseLoop)
+        |> List.map (Syntax.map markdownParseLoop)
         |> Common.Render.render generation settings
 
 
@@ -60,7 +81,7 @@ compileMiniLaTeX : Int -> Settings -> List String -> List (Element msg)
 compileMiniLaTeX generation settings lines =
     lines
         |> MiniLaTeX.parse generation
-        |> List.map (Syntax.map2 miniLaTeXParseLoop)
+        |> List.map (Syntax.map miniLaTeXParseLoop)
         |> Common.Render.render generation settings
 
 
@@ -68,7 +89,7 @@ parseMiniLaTeX : Int -> b -> List String -> List Syntax.TextBlock
 parseMiniLaTeX generation settings lines =
     lines
         |> MiniLaTeX.parse generation
-        |> List.map (Syntax.map2 miniLaTeXParseLoop)
+        |> List.map (Syntax.map miniLaTeXParseLoop)
 
 
 miniLaTeXParseLoop : String -> List Text
@@ -85,5 +106,5 @@ compileL1 : Int -> Settings -> List String -> List (Element msg)
 compileL1 generation settings lines =
     lines
         |> L1Block.parse generation
-        |> List.map (Syntax.map2 (Common.Text.Parser.dummyParse generation settings))
+        |> List.map (Syntax.map (Common.Text.Parser.dummyParse generation settings))
         |> Common.Render.render generation settings

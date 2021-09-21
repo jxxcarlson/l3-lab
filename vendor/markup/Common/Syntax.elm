@@ -1,13 +1,13 @@
 module Common.Syntax exposing
     ( Block(..)
     , BlockType(..)
+    , Language(..)
     , Meta
     , Text(..)
     , TextBlock(..)
     , dummyMeta
+    , getName
     , map
-    , map2
-    , mapList
     , textBlockToString
     , textToString
     )
@@ -34,6 +34,23 @@ type Text
     | TError String
 
 
+getName : Text -> Maybe String
+getName text =
+    case text of
+        Marked str _ _ ->
+            Just str
+
+        _ ->
+            Nothing
+
+
+{-| -}
+type Language
+    = L1
+    | Markdown
+    | MiniLaTeX
+
+
 type TextBlock
     = TBParagraph (List Text) Meta
     | TBVerbatimBlock String (List String) Meta
@@ -41,8 +58,8 @@ type TextBlock
     | TBError String
 
 
-map2 : (String -> List Text) -> Block -> TextBlock
-map2 f block =
+map : (String -> List Text) -> Block -> TextBlock
+map f block =
     case block of
         Paragraph stringList meta ->
             TBParagraph (List.map f stringList |> List.concat) meta
@@ -51,7 +68,7 @@ map2 f block =
             TBVerbatimBlock name stringList meta
 
         Block name blockList meta ->
-            TBBlock name (List.map (map2 f) blockList) meta
+            TBBlock name (List.map (map f) blockList) meta
 
         Error str ->
             TBError str
@@ -79,38 +96,6 @@ dummyMeta start indent =
 
 
 -- FUNCTIONS
-
-
-mapList : (List String -> List Text) -> Block -> TextBlock
-mapList f block =
-    case block of
-        Paragraph stringList meta ->
-            TBParagraph (f stringList) meta
-
-        VerbatimBlock name stringList meta ->
-            TBVerbatimBlock name stringList meta
-
-        Block name blockList meta ->
-            TBBlock name (List.map (mapList f) blockList) meta
-
-        Error str ->
-            TBError str
-
-
-map : (String -> Text) -> Block -> TextBlock
-map f block =
-    case block of
-        Paragraph stringList meta ->
-            TBParagraph (List.map f stringList) meta
-
-        VerbatimBlock name stringList meta ->
-            TBVerbatimBlock name stringList meta
-
-        Block name blockList meta ->
-            TBBlock name (List.map (map f) blockList) meta
-
-        Error str ->
-            TBError str
 
 
 textBlockToString : TextBlock -> List String

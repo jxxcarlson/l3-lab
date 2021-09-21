@@ -6,7 +6,7 @@ import Element.Background as Background
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import L1.API
+import Markup.API
 import Types exposing (..)
 import View.Button as Button
 import View.Color as Color
@@ -31,7 +31,7 @@ mainColumn : Model -> Element FrontendMsg
 mainColumn model =
     E.column (mainColumnStyle model)
         [ E.column [ E.spacing 12, E.width (E.px <| appWidth_ model), E.height (E.px (appHeight_ model)) ]
-            [ title "L1 Demo App"
+            [ title "L3 Lab"
             , header model
             , E.column [ E.spacing 12 ]
                 [ E.row [ E.spacing 12 ]
@@ -293,8 +293,19 @@ viewRendered model =
         ]
         [ View.Utility.katexCSS
         , E.column [ E.spacing 18, E.width (E.px (panelWidth_ model - 40)) ]
-            (L1.API.renderDocument (renderArgs model) model.counter model.currentDocument.content)
+            (Markup.API.compile model.currentDocument.language model.counter (settings model) (String.lines model.currentDocument.content))
+
+        --  (Markup.API.compile Markup.API.Markdown model.counter (settings model) (String.lines model.currentDocument.content))
         ]
+
+
+settings model =
+    { width = 500 }
+
+
+
+--compile : Language -> Int -> Settings -> List String -> List (Element msg)
+--compile language generation settings lines
 
 
 renderArgs model =

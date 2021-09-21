@@ -13,6 +13,8 @@ module Document exposing
     , wordCount
     )
 
+import Common.Syntax
+import Markup.API
 import Time
 import User exposing (User)
 
@@ -115,6 +117,7 @@ type alias Document =
     , content : String
     , access : Access
     , slug : Maybe String
+    , language : Common.Syntax.Language
     }
 
 
@@ -139,6 +142,7 @@ empty =
     , content = ""
     , access = Private
     , slug = Nothing
+    , language = Common.Syntax.Markdown
     }
 
 
