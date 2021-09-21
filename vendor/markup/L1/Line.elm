@@ -49,4 +49,4 @@ beginVerbatimBlockParser =
         |= Parser.getOffset
         |= Parser.getSource
     )
-        |> Parser.map (\s -> Line.BeginVerbatimBlock s)
+        |> Parser.map (\s -> Line.BeginVerbatimBlock '|' s)

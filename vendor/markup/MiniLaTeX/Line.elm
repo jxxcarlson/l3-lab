@@ -31,7 +31,7 @@ beginMathBlockParser =
     (Parser.succeed String.slice
         |. Parser.symbol "$$"
     )
-        |> Parser.map (\_ -> Line.BeginVerbatimBlock "math")
+        |> Parser.map (\_ -> Line.BeginVerbatimBlock '$' "math")
 
 
 beginCodeBlockParser : Parser Line.LineType
@@ -39,7 +39,7 @@ beginCodeBlockParser =
     (Parser.succeed String.slice
         |. Parser.symbol "```"
     )
-        |> Parser.map (\_ -> Line.BeginVerbatimBlock "code")
+        |> Parser.map (\_ -> Line.BeginVerbatimBlock '`' "code")
 
 
 beginBlockParser : Parser Line.LineType

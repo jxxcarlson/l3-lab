@@ -8,7 +8,7 @@ type LineType
     | BlankLine
     | BeginBlock String
     | EndBlock String
-    | BeginVerbatimBlock String
+    | BeginVerbatimBlock Char String
     | EndVerbatimBlock String
     | Problem String
 
