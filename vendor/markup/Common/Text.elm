@@ -45,7 +45,7 @@ renderVerbatim name generation settings str =
             notImplemented name
 
         Just f ->
-            f generation settings (Debug.log "XXVerbatim" str)
+            f generation settings str
 
 
 renderMarked name generation settings textList =

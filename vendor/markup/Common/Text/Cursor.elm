@@ -111,9 +111,6 @@ nextCursor rules cursor =
 
                 Ok stringData ->
                     let
-                        _ =
-                            Debug.log "stringData.content" stringData.content
-
                         scanPoint =
                             cursor.scanPoint + stringData.finish - stringData.start + rule.endCharLength
 
@@ -175,16 +172,13 @@ nextCursor rules cursor =
 
                         _ =
                             debug2 "COMMITTED" committed
-
-                        _ =
-                            ( scanPoint, stopStr, action ) |> Debug.log "(ScanPoint, StopStr, Action)"
                     in
                     Loop
                         { cursor
                             | stringData = stringData
                             , committed = committed
                             , stack = stack
-                            , scanPoint = scanPoint |> Debug.log "scanPoint"
+                            , scanPoint = scanPoint
                             , count = cursor.count + 1
                         }
 
@@ -245,10 +239,6 @@ contract3Stack stack =
                     stack
 
                 Just text_ ->
-                    let
-                        _ =
-                            Debug.log "ACTION" "contract stack, scanPoint"
-                    in
                     text_ :: rest
 
         _ ->
