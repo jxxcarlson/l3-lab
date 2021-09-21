@@ -1,0 +1,5 @@
+scripts:
+
+  update-vendor: cp -r ../markup/src/ vendor/markup
+
+  cloc: cloc --by-file --exclude-dir=Evergreen src/
