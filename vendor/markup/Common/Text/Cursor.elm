@@ -111,6 +111,9 @@ nextCursor rules cursor =
 
                 Ok stringData ->
                     let
+                        _ =
+                            debug1 "stringData.content" stringData.content
+
                         scanPoint =
                             cursor.scanPoint + stringData.finish - stringData.start + rule.endCharLength
 
@@ -172,13 +175,16 @@ nextCursor rules cursor =
 
                         _ =
                             debug2 "COMMITTED" committed
+
+                        _ =
+                            ( scanPoint, stopStr, action ) |> debug1 "(ScanPoint, StopStr, Action)"
                     in
                     Loop
                         { cursor
                             | stringData = stringData
                             , committed = committed
                             , stack = stack
-                            , scanPoint = scanPoint
+                            , scanPoint = scanPoint |> debug1 "scanPoint"
                             , count = cursor.count + 1
                         }
 
@@ -239,6 +245,10 @@ contract3Stack stack =
                     stack
 
                 Just text_ ->
+                    let
+                        _ =
+                            debug1 "ACTION" "contract stack, scanPoint"
+                    in
                     text_ :: rest
 
         _ ->
@@ -258,6 +268,10 @@ contractStack stack =
                     stack
 
                 Just text_ ->
+                    let
+                        _ =
+                            debug1 "ACTION" "contract stack, scanPoint"
+                    in
                     text_ :: rest
 
         text1 :: text2 :: rest ->
@@ -266,6 +280,10 @@ contractStack stack =
                     stack
 
                 Just text_ ->
+                    let
+                        _ =
+                            debug1 "ACTION" "contract stack, scanPoint"
+                    in
                     text_ :: rest
 
         _ ->
@@ -288,6 +306,10 @@ contractStackRepeatedly stack =
                     stack
 
                 Just text_ ->
+                    let
+                        _ =
+                            debug1 "ACTION" "contract stack, scanPoint"
+                    in
                     text_ :: rest
 
         text1 :: text2 :: rest ->
@@ -296,6 +318,10 @@ contractStackRepeatedly stack =
                     stack
 
                 Just text_ ->
+                    let
+                        _ =
+                            debug1 "ACTION" "contract stack, scanPoint"
+                    in
                     contractStackRepeatedly (text_ :: rest)
 
         _ ->

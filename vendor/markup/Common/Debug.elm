@@ -3,10 +3,6 @@ module Common.Debug exposing (debug1, debug2, debug3)
 import Console
 
 
-debugOn =
-    False
-
-
 debug1 str =
     identity
 

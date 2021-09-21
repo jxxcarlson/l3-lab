@@ -16,25 +16,29 @@ parse generation lines =
 
 run : Int -> List String -> State
 run generation input =
-    BP.loop (BP.initialState generation input) (BP.nextState nextStateAux)
+    BP.loop (BP.initialState generation input) (BP.nextStep nextStateAux)
 
 
 nextStateAux : String -> State -> State
 nextStateAux line state =
     let
         lineType =
-            Line.classify line
+            Line.classify line |> debug2 "lineType"
 
         indent =
             lineType.indent
     in
     case lineType.lineType of
         BeginBlock s ->
+            let
+                innerBlock =
+                    Paragraph [ lineType.content ] (Syntax.dummyMeta 0 0)
+            in
             if BP.level indent <= BP.blockLevelOfStackTop state.stack then
-                { state | indent = indent } |> BP.reduceStack |> BP.shift (Block s [] (Syntax.dummyMeta 0 0))
+                { state | indent = indent } |> BP.reduceStack |> BP.shift (Block s [ innerBlock ] (Syntax.dummyMeta 0 0))
 
             else
-                { state | indent = indent } |> BP.shift (Block s [] (Syntax.dummyMeta 0 0))
+                { state | indent = indent } |> BP.shift (Block s [ innerBlock ] (Syntax.dummyMeta 0 0))
 
         BeginVerbatimBlock s ->
             if BP.level indent <= BP.blockLevelOfStackTop state.stack then
