@@ -1,6 +1,5 @@
 module Common.BlockParser exposing
-    ( ScannerType(..)
-    , State
+    ( State
     , Step(..)
     , appendLineAtTop
     , blockLabel
@@ -36,13 +35,7 @@ type alias State =
     , blockCount : Int
     , counter : Int
     , stack : List Block
-    , scannerType : ScannerType
     }
-
-
-type ScannerType
-    = NormalScan
-    | VerbatimScan Char
 
 
 parse : (String -> State -> State) -> Int -> List String -> List Block
@@ -96,7 +89,6 @@ initialState generation input =
     , blockCount = 0
     , counter = 0
     , stack = []
-    , scannerType = NormalScan
     }
 
 

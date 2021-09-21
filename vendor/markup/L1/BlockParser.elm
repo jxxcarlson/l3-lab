@@ -39,7 +39,7 @@ nextStateAux line state =
             else
                 { state | indent = indent } |> BP.shift (Block s [] (Syntax.dummyMeta 0 0))
 
-        BeginVerbatimBlock c s ->
+        BeginVerbatimBlock s ->
             if BP.level indent <= BP.blockLevelOfStackTop state.stack then
                 { state | indent = indent } |> BP.reduceStack |> BP.shift (VerbatimBlock s [] (Syntax.dummyMeta 0 0))
 

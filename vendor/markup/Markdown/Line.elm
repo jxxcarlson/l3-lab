@@ -1,34 +1,21 @@
 module Markdown.Line exposing (classify)
 
-import Common.BlockParser as BP
-import Common.Debug exposing (debug2, debug3)
+import Common.Debug exposing (debug3)
 import Common.Library.ParserTools as ParserTools
 import Common.Line as Line
 import Parser exposing ((|.), (|=), Parser)
 
 
-classify : BP.ScannerType -> String -> { indent : Int, lineType : Line.LineType, content : String }
-classify scannerType str =
+classify : String -> { indent : Int, lineType : Line.LineType, content : String }
+classify str =
     let
         leadingSpaces =
             Line.countLeadingSpaces str
 
-        _ =
-            debug2 "scannerType" scannerType
-
-        lineType_ : Line.LineType
-        lineType_ =
-            case scannerType of
-                BP.NormalScan ->
-                    lineType (String.dropLeft leadingSpaces str) |> debug3 "classify, lineType"
-
-                BP.VerbatimScan _ ->
-                    Line.OrdinaryLine
-
         nibble str_ =
             String.dropLeft (String.length (ParserTools.nibble str_) + 1) str_
     in
-    { indent = leadingSpaces, lineType = lineType_, content = nibble str |> debug3 "classify, str" }
+    { indent = leadingSpaces, lineType = lineType (String.dropLeft leadingSpaces str) |> debug3 "classify, lineType", content = nibble str |> debug3 "classify, str" }
 
 
 lineType : String -> Line.LineType
@@ -69,7 +56,7 @@ beginMathBlockParser =
     (Parser.succeed String.slice
         |. Parser.symbol "$$"
     )
-        |> Parser.map (\_ -> Line.BeginVerbatimBlock '$' "math")
+        |> Parser.map (\_ -> Line.BeginVerbatimBlock "math")
 
 
 beginCodeBlockParser : Parser Line.LineType
@@ -77,7 +64,7 @@ beginCodeBlockParser =
     (Parser.succeed String.slice
         |. Parser.symbol "```"
     )
-        |> Parser.map (\_ -> Line.BeginVerbatimBlock '`' "code")
+        |> Parser.map (\_ -> Line.BeginVerbatimBlock "code")
 
 
 beginQuotationBlockParser : Parser Line.LineType

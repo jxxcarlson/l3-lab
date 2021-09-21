@@ -23,7 +23,7 @@ nextStateAux : String -> State -> State
 nextStateAux line state =
     let
         lineType =
-            Line.classify state.scannerType line |> debug2 "lineType"
+            Line.classify line |> debug2 "lineType"
 
         indent =
             lineType.indent
@@ -38,9 +38,9 @@ nextStateAux line state =
                 { state | indent = indent } |> BP.reduceStack |> BP.shift (Block s [ innerBlock ] (Syntax.dummyMeta 0 0))
 
             else
-                { state | indent = indent, scannerType = BP.NormalScan } |> BP.shift (Block s [ innerBlock ] (Syntax.dummyMeta 0 0))
+                { state | indent = indent } |> BP.shift (Block s [ innerBlock ] (Syntax.dummyMeta 0 0))
 
-        BeginVerbatimBlock c s ->
+        BeginVerbatimBlock s ->
             if BP.level indent <= BP.blockLevelOfStackTop state.stack then
                 let
                     _ =
@@ -53,13 +53,13 @@ nextStateAux line state =
                         yada.prefix |> BP.blockLabelAtBottomOfStack |> debug2 "yada.prefix, bottom label"
                 in
                 if BP.blockLabelAtBottomOfStack yada.prefix == s then
-                    { state | indent = indent, scannerType = BP.VerbatimScan c } |> BP.reduceStack
+                    { state | indent = indent } |> BP.reduceStack
 
                 else
-                    { state | indent = indent, scannerType = BP.VerbatimScan c } |> BP.reduceStack |> BP.shift (VerbatimBlock s [] (Syntax.dummyMeta 0 0))
+                    { state | indent = indent } |> BP.reduceStack |> BP.shift (VerbatimBlock s [] (Syntax.dummyMeta 0 0))
 
             else
-                { state | indent = indent, scannerType = BP.VerbatimScan c } |> BP.shift (VerbatimBlock s [] (Syntax.dummyMeta 0 0))
+                { state | indent = indent } |> BP.shift (VerbatimBlock s [] (Syntax.dummyMeta 0 0))
 
         OrdinaryLine ->
             state |> handleOrdinaryLine indent line
@@ -92,7 +92,7 @@ nextStateAux line state =
 
         EndVerbatimBlock s ->
             -- TODO: finish up
-            reduce (EndVerbatimBlock s) { state | scannerType = BP.NormalScan }
+            reduce (EndVerbatimBlock s) state
 
         Problem s ->
             -- TODO: finish up
