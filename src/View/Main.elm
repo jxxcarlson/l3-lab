@@ -281,7 +281,7 @@ viewEditor_ model =
 viewRendered : Model -> Element FrontendMsg
 viewRendered model =
     E.column
-        [ E.paddingEach { left = 24, right = 24, top = 12, bottom = 96 }
+        [ E.paddingEach { left = 24, right = 24, top = 32, bottom = 96 }
         , View.Style.bgGray 1.0
         , E.width (E.px (panelWidth_ model))
         , E.height (E.px (panelHeight_ model))

@@ -374,7 +374,7 @@ updateFromBackend msg model =
 
 view : Model -> { title : String, body : List (Html.Html FrontendMsg) }
 view model =
-    { title = "L1-Lab"
+    { title = "L3-Lab"
     , body =
         [ View.Main.view model ]
     }
