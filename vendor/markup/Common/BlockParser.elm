@@ -69,7 +69,7 @@ nextStep nextStateAux state =
                     debug1 "Reduce stack" (newState.output |> List.map Basic.simplify)
 
                 finalState =
-                    { newState | output = newState.stack ++ newState.output |> List.reverse }
+                    { newState | output = newState.stack ++ newState.output |> List.reverse |> debug1 "reverse contents (2)" }
 
                 _ =
                     finalState |> .output |> List.map Basic.simplify |> debug1 "OUTPUT"
@@ -96,67 +96,46 @@ initialState generation input =
 
 reduceStack : State -> State
 reduceStack state =
-    let
-        _ =
-            debug1 "reduceStack" True
-    in
-    case List.Extra.uncons state.stack of
-        Nothing ->
+    case state.stack of
+        block1 :: block2 :: rest ->
+            if blockLevel block1 <= blockLevel block2 then
+                state
+
+            else
+                handle state rest block1 block2
+
+        block1 :: rest ->
+            { state | output = reverseContents block1 :: state.output, stack = rest }
+
+        [] ->
             state
 
-        Just ( block1, stack1 ) ->
-            case List.Extra.uncons stack1 of
-                Nothing ->
+
+handle state stack2 block1 block2 =
+    case block2 of
+        Block name blocks meta ->
+            let
+                newBlock : Block
+                newBlock =
+                    Block name (reverseContents block1 :: blocks) meta
+            in
+            reduceStack { state | stack = stack2, output = newBlock :: state.output }
+
+        VerbatimBlock name blocks meta ->
+            case block1 of
+                Paragraph strings metaP ->
                     let
-                        _ =
-                            debug1 "reduceStack, len = " 1
+                        newBlock : Block
+                        newBlock =
+                            VerbatimBlock name (List.reverse <| strings ++ blocks) metaP
                     in
-                    { state | output = reverseContents block1 :: state.output, stack = stack1 }
+                    reduceStack { state | stack = stack2, output = newBlock :: state.output }
 
-                Just ( block2, stack2 ) ->
-                    let
-                        _ =
-                            debug1 "reduceStack, (level(1), level(2)" ( blockLevel block1, blockLevel block2 )
-                    in
-                    if blockLevel block1 <= blockLevel block2 then
-                        let
-                            _ =
-                                debug1 "blockLevel blockM1 <= blockLevel blockM2" True
-                        in
-                        state
+                _ ->
+                    state
 
-                    else
-                        case block2 of
-                            Block name blocks meta ->
-                                let
-                                    _ =
-                                        debug1 "reduceStack Block" True
-
-                                    newBlock : Block
-                                    newBlock =
-                                        Block name (reverseContents block1 :: blocks) meta
-                                in
-                                reduceStack { state | stack = stack2, output = newBlock :: state.output }
-
-                            VerbatimBlock name blocks meta ->
-                                let
-                                    _ =
-                                        debug1 "reduceStack VerbatimBlock" True
-                                in
-                                case block1 of
-                                    Paragraph strings metaP ->
-                                        let
-                                            newBlock : Block
-                                            newBlock =
-                                                VerbatimBlock name (List.reverse <| strings ++ blocks) metaP
-                                        in
-                                        reduceStack { state | stack = stack2, output = newBlock :: state.output }
-
-                                    _ ->
-                                        state
-
-                            _ ->
-                                state
+        _ ->
+            state
 
 
 
@@ -293,8 +272,8 @@ reverseContents block =
         VerbatimBlock name strings meta ->
             VerbatimBlock name (List.reverse strings) meta
 
-        Block name strings meta ->
-            Block name (List.reverse strings) meta
+        Block name blocks meta ->
+            Block name (List.map reverseContents blocks) meta
 
         Error s ->
             Error s
@@ -367,8 +346,15 @@ appendLineAtTop line stack =
 
         Just block ->
             case block of
+                -- TODO: fix Meta, examine other cases not handled
                 Paragraph strings meta ->
                     Paragraph (line :: strings) meta :: List.drop 1 stack
+
+                Block name ((Paragraph lines meta1) :: rest) meta2 ->
+                    Block name (Paragraph (line :: lines) meta1 :: rest) meta2 :: List.drop 1 stack
+
+                Block name ((Block name2 blocks meta1) :: rest) meta2 ->
+                    Block name (Paragraph [ line ] meta1 :: Block name2 blocks meta1 :: rest) meta2 :: List.drop 1 stack
 
                 _ ->
                     stack

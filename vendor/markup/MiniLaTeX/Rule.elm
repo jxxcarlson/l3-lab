@@ -19,6 +19,7 @@ defaultRule =
     { name = "alpha"
     , start = \c -> not (List.member c (' ' :: miniLaTexDelimiters))
     , continue = \c -> not (List.member c miniLaTexDelimiters)
+    , spaceFollows = False
     , endCharLength = 0
     , dropLeadingChars = 1
     , isVerbatim = False
@@ -39,6 +40,7 @@ miniLaTeXRuleList =
       , { name = "macro"
         , start = \c -> c == '\\'
         , continue = \c -> not (c == ' ' || c == '{')
+        , spaceFollows = False
         , endCharLength = 0
         , dropLeadingChars = 1
         , isVerbatim = False
@@ -51,12 +53,13 @@ miniLaTeXRuleList =
     , ( ' '
       , { name = "blank"
         , start = \c -> c == ' '
-        , continue = \c -> not (List.member c miniLaTexDelimiters)
+        , continue = \c -> c == ' '
+        , spaceFollows = False
         , endCharLength = 0
         , dropLeadingChars = 1
         , isVerbatim = False
         , expect =
-            [ { stop = miniLaTexDelimitersStr, action = CommitText }
+            [ { stop = miniLaTexDelimitersStr, action = Commit }
             ]
         }
       )
@@ -64,6 +67,7 @@ miniLaTeXRuleList =
       , { name = "argBegin"
         , start = \c -> c == '{'
         , continue = \c -> False
+        , spaceFollows = False
         , endCharLength = 0 -- adjust for '}' at end of arg
         , dropLeadingChars = 1
         , isVerbatim = False
@@ -76,6 +80,7 @@ miniLaTeXRuleList =
       , { name = "argEnd"
         , start = \c -> c == '}'
         , continue = \c -> False
+        , spaceFollows = False
         , endCharLength = 0 -- adjust for '}' at end of arg
         , dropLeadingChars = 1
         , isVerbatim = False

@@ -1,7 +1,7 @@
 module Common.Text.Cursor exposing (Step(..), TextCursor, init, nextCursor, parseLoop)
 
 import Common.Debug exposing (debug1, debug2, debug3)
-import Common.Library.ParserTools as ParserTools
+import Common.Library.ParserTools as ParserTools exposing (StringData)
 import Common.Syntax as Syntax exposing (Text(..))
 import Common.Text.Error exposing (Context(..), Problem(..))
 import Common.Text.Rule as Rule exposing (Action(..), Rule, Rules)
@@ -51,6 +51,10 @@ type ScannerType
 
 parseLoop : Rules -> TextCursor -> TextCursor
 parseLoop rules initialCursor =
+    let
+        _ =
+            debug3 "+++++++++++++++" "+"
+    in
     if initialCursor.source == "" then
         { initialCursor
             | stack = []
@@ -64,129 +68,156 @@ parseLoop rules initialCursor =
 nextCursor : Rules -> TextCursor -> Step TextCursor TextCursor
 nextCursor rules cursor =
     let
-        textToProcess : String
         textToProcess =
             String.dropLeft cursor.scanPoint cursor.source
     in
     case String.uncons textToProcess of
         Nothing ->
-            let
-                stack =
-                    contractStackRepeatedly cursor.stack
-            in
-            case List.Extra.uncons stack of
+            case List.Extra.uncons (contractStackRepeatedly cursor.stack) of
                 Nothing ->
                     Done cursor
 
                 Just ( item, rest ) ->
                     Done { cursor | committed = item :: cursor.committed, stack = rest }
 
-        Just ( leadingChar, restOfText ) ->
+        Just ( leadingChar, _ ) ->
+            nextCursor_ leadingChar cursor rules textToProcess
+
+
+nextCursor_ leadingChar cursor rules textToProcess =
+    let
+        rule =
+            Rule.get rules leadingChar
+
+        scannerType =
+            getScannerType cursor rule leadingChar
+
+        currentParser =
+            getParser rule
+
+        _ =
+            debug3 "========================" "="
+
+        _ =
+            rule.name |> debug1 "RULE"
+    in
+    case currentParser textToProcess of
+        Err _ ->
+            Done cursor
+
+        Ok stringData ->
             let
-                rule =
-                    Rule.get rules leadingChar
+                _ =
+                    debug1 "stringData.content" stringData.content
 
-                scannerType =
-                    case cursor.scannerType of
-                        NormalScan ->
-                            if rule.isVerbatim then
-                                VerbatimScan leadingChar
+                scanPoint =
+                    cursor.scanPoint + stringData.finish - stringData.start + rule.endCharLength
+
+                stopStr =
+                    String.slice scanPoint (scanPoint + 1) cursor.source
+
+                action =
+                    Rule.getAction stopStr rule
+
+                meta =
+                    { start = cursor.scanPoint
+                    , end = cursor.scanPoint + stringData.finish - stringData.start + rule.endCharLength
+                    , indent = 0
+                    , id = String.fromInt cursor.generation ++ "." ++ String.fromInt cursor.count
+                    }
+
+                ( committed, stack ) =
+                    case action of
+                        Commit ->
+                            let
+                                newStack =
+                                    contractStackRepeatedly cursor.stack |> debug3 "newStack (Commit)"
+
+                                -- TODO: not working for \\foo{\\bar{baz}
+                                -- TODO: we have to handle the case of length newStack > 1, which is an error state
+                            in
+                            case List.head newStack of
+                                Just item ->
+                                    ( Text " " (Syntax.dummyMeta 0 0) :: item :: cursor.committed, List.drop 1 newStack )
+
+                                Nothing ->
+                                    -- TODO: is this correct?
+                                    ( cursor.committed, [] )
+
+                        CommitMarked ->
+                            ( Marked (String.dropLeft 1 stringData.content) [] meta :: cursor.committed, cursor.stack )
+
+                        ShiftText ->
+                            if cursor.stack == [] then
+                                ( Text stringData.content meta :: cursor.committed, cursor.stack )
 
                             else
-                                NormalScan
+                                ( cursor.committed, Text stringData.content meta :: cursor.stack )
 
-                        VerbatimScan c ->
-                            if c == leadingChar then
-                                NormalScan
+                        ShiftMarked ->
+                            -- ( cursor.committed, Marked (String.dropLeft rule.dropLeadingChars stringData.content) [] meta :: cursor.stack )
+                            ( cursor.committed, Marked (String.trim stringData.content) [] meta :: cursor.stack )
 
-                            else
-                                VerbatimScan c
+                        ShiftVerbatim c ->
+                            ( cursor.committed, Verbatim c "" meta :: cursor.stack |> contract3Stack )
+
+                        ShiftArg ->
+                            ( cursor.committed, Arg [] meta :: cursor.stack )
+
+                        ReduceArg ->
+                            let
+                                _ =
+                                    debug2 "ReduceArg, contracted stack" contractStack cursor.stack
+                            in
+                            ( cursor.committed, contractStack cursor.stack )
+
+                        _ ->
+                            ( cursor.committed, cursor.stack )
 
                 _ =
-                    rule.name |> debug1 "RULE"
+                    debug2 "STACK" stack
+
+                _ =
+                    debug2 "COMMITTED" committed
+
+                _ =
+                    ( scanPoint, stopStr, action ) |> debug1 "(ScanPoint, StopStr, Action)"
             in
-            case ParserTools.getText rule.start rule.continue textToProcess of
-                Err _ ->
-                    Done cursor
+            Loop
+                { cursor
+                    | stringData = stringData
+                    , committed = committed
+                    , stack = stack
+                    , scanPoint = scanPoint |> debug1 "scanPoint"
+                    , count = cursor.count + 1
+                }
 
-                Ok stringData ->
-                    let
-                        _ =
-                            debug1 "stringData.content" stringData.content
 
-                        scanPoint =
-                            cursor.scanPoint + stringData.finish - stringData.start + rule.endCharLength
+getParser : Rule -> String -> Result (List (Parser.Advanced.DeadEnd Context Problem)) StringData
+getParser rule =
+    if rule.spaceFollows then
+        ParserTools.getTextAndSpaces rule.start rule.continue
 
-                        stopStr =
-                            String.slice scanPoint (scanPoint + 1) cursor.source
+    else
+        ParserTools.getText rule.start rule.continue
 
-                        action =
-                            Rule.getAction stopStr rule
 
-                        meta =
-                            { start = cursor.scanPoint
-                            , end = cursor.scanPoint + stringData.finish - stringData.start + rule.endCharLength
-                            , indent = 0
-                            , id = String.fromInt cursor.generation ++ "." ++ String.fromInt cursor.count
-                            }
+getScannerType : TextCursor -> Rule -> Char -> ScannerType
+getScannerType cursor rule leadingChar =
+    case cursor.scannerType of
+        NormalScan ->
+            if rule.isVerbatim then
+                VerbatimScan leadingChar
 
-                        ( committed, stack ) =
-                            case action of
-                                CommitText ->
-                                    let
-                                        newStack =
-                                            contractStackRepeatedly cursor.stack |> debug2 "newStack"
+            else
+                NormalScan
 
-                                        -- TODO: we have to handle the case of length newStack > 1, which is an error state
-                                    in
-                                    ( contractStack <| Text stringData.content meta :: (newStack ++ cursor.committed), [] )
+        VerbatimScan c ->
+            if c == leadingChar then
+                NormalScan
 
-                                CommitMarked ->
-                                    ( Marked (String.dropLeft 1 stringData.content) [] meta :: cursor.committed, cursor.stack )
-
-                                ShiftText ->
-                                    if cursor.stack == [] then
-                                        ( Text stringData.content meta :: cursor.committed, cursor.stack )
-
-                                    else
-                                        ( cursor.committed, Text stringData.content meta :: cursor.stack )
-
-                                ShiftMarked ->
-                                    ( cursor.committed, Marked (String.dropLeft rule.dropLeadingChars stringData.content) [] meta :: cursor.stack )
-
-                                ShiftVerbatim c ->
-                                    ( cursor.committed, Verbatim c "" meta :: cursor.stack |> contract3Stack )
-
-                                ShiftArg ->
-                                    ( cursor.committed, Arg [] meta :: cursor.stack )
-
-                                ReduceArg ->
-                                    let
-                                        _ =
-                                            debug2 "ReduceArg, contracted stack" contractStack cursor.stack
-                                    in
-                                    ( cursor.committed, contractStack cursor.stack )
-
-                                _ ->
-                                    ( cursor.committed, cursor.stack )
-
-                        _ =
-                            debug2 "STACK" stack
-
-                        _ =
-                            debug2 "COMMITTED" committed
-
-                        _ =
-                            ( scanPoint, stopStr, action ) |> debug1 "(ScanPoint, StopStr, Action)"
-                    in
-                    Loop
-                        { cursor
-                            | stringData = stringData
-                            , committed = committed
-                            , stack = stack
-                            , scanPoint = scanPoint |> debug1 "scanPoint"
-                            , count = cursor.count + 1
-                        }
+            else
+                VerbatimScan c
 
 
 contract : Text -> Text -> Maybe Text
@@ -247,7 +278,7 @@ contract3Stack stack =
                 Just text_ ->
                     let
                         _ =
-                            debug1 "ACTION" "contract stack, scanPoint"
+                            debug1 "ACTION 3" "contract stack, scanPoint"
                     in
                     text_ :: rest
 
@@ -256,24 +287,17 @@ contract3Stack stack =
 
 
 contractStack : List Text -> List Text
-contractStack stack =
+contractStack =
+    contract2Stack >> contract3Stack
+
+
+contract2Stack : List Text -> List Text
+contract2Stack stack =
     let
         _ =
             debug3 "contractStack, stack" stack
     in
     case stack of
-        text1 :: text2 :: text3 :: rest ->
-            case contract3 text1 text2 text3 of
-                Nothing ->
-                    stack
-
-                Just text_ ->
-                    let
-                        _ =
-                            debug1 "ACTION" "contract stack, scanPoint"
-                    in
-                    text_ :: rest
-
         text1 :: text2 :: rest ->
             case contract text1 text2 of
                 Nothing ->
@@ -282,7 +306,7 @@ contractStack stack =
                 Just text_ ->
                     let
                         _ =
-                            debug1 "ACTION" "contract stack, scanPoint"
+                            debug1 "ACTION 2" "contract stack, scanPoint"
                     in
                     text_ :: rest
 
@@ -308,7 +332,7 @@ contractStackRepeatedly stack =
                 Just text_ ->
                     let
                         _ =
-                            debug1 "ACTION" "contract stack, scanPoint"
+                            debug1 "ACTION 3(R)" "contract stack, scanPoint"
                     in
                     text_ :: rest
 
@@ -320,7 +344,7 @@ contractStackRepeatedly stack =
                 Just text_ ->
                     let
                         _ =
-                            debug1 "ACTION" "contract stack, scanPoint"
+                            debug1 "ACTION (2)R" "contract stack, scanPoint"
                     in
                     contractStackRepeatedly (text_ :: rest)
 
