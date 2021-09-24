@@ -5,6 +5,7 @@ module Frontend.Update exposing
     , updateWithViewport
     )
 
+import Common.Syntax
 import Document exposing (Document)
 import Lamdera exposing (sendToBackend)
 import List.Extra
@@ -41,12 +42,24 @@ newDocument model =
                     emptyDoc =
                         Document.empty
 
+                    title =
+                        case model.language of
+                            Common.Syntax.L1 ->
+                                "[title New Document]"
+
+                            Common.Syntax.Markdown ->
+                                "# New Document"
+
+                            Common.Syntax.MiniLaTeX ->
+                                "\\title{New Document}"
+
                     doc =
                         { emptyDoc
-                            | title = "New Document"
+                            | title = title
                             , author = user.realname
                             , username = user.username
                             , content = "[title New Document]"
+                            , language = model.language
                         }
                 in
                 ( { model | showEditor = True }, sendToBackend (RegisterNewDocument doc) )

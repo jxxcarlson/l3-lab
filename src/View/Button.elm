@@ -9,7 +9,10 @@ module View.Button exposing
     , getUsers
     , grantGuestAccess
     , help
+    , l1LanguageButton
     , linkTemplate
+    , markupLanguageButton
+    , miniLaTeXLanguageButton
     , newDocument
     , printToPDF
     , runTask
@@ -20,6 +23,7 @@ module View.Button exposing
     , toggleEditor
     )
 
+import Common.Syntax
 import Config
 import Document exposing (Access(..))
 import Element as E exposing (Element)
@@ -264,6 +268,42 @@ adminPopup model =
 
 getUsers =
     buttonTemplate [] GetUsers "Get Users"
+
+
+markupLanguageButton model =
+    let
+        bg =
+            if model.language == Common.Syntax.Markdown then
+                Background.color Color.darkRed
+
+            else
+                Background.color (E.rgb255 40 40 40)
+    in
+    buttonTemplate [ bg ] (SetLanguage Common.Syntax.Markdown) "Markdown"
+
+
+l1LanguageButton model =
+    let
+        bg =
+            if model.language == Common.Syntax.L1 then
+                Background.color Color.darkRed
+
+            else
+                Background.color (E.rgb255 40 40 40)
+    in
+    buttonTemplate [ bg ] (SetLanguage Common.Syntax.L1) "L1"
+
+
+miniLaTeXLanguageButton model =
+    let
+        bg =
+            if model.language == Common.Syntax.MiniLaTeX then
+                Background.color Color.darkRed
+
+            else
+                Background.color (E.rgb255 40 40 40)
+    in
+    buttonTemplate [ bg ] (SetLanguage Common.Syntax.MiniLaTeX) "MiniLaTeX"
 
 
 

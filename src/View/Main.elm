@@ -138,6 +138,9 @@ signedInHeader model user =
         , Button.toggleEditor model
         , author model
         , wordCount model
+        , Button.miniLaTeXLanguageButton model
+        , Button.markupLanguageButton model
+        , Button.l1LanguageButton model
 
         -- , Button.help
         ]

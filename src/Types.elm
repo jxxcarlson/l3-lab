@@ -4,6 +4,7 @@ import Authentication exposing (AuthenticationDict)
 import Browser exposing (UrlRequest)
 import Browser.Dom as Dom
 import Browser.Navigation exposing (Key)
+import Common.Syntax
 import Data exposing (DataDict)
 import Document exposing (Document)
 import Http
@@ -36,6 +37,7 @@ type alias FrontendModel =
     -- DOCUMENT
     , currentDocument : Document
     , documents : List Document
+    , language : Common.Syntax.Language
     , inputSearchKey : String
     , printingState : PrintingState
     , documentDeleteState : DocumentDeleteState
@@ -95,6 +97,7 @@ type FrontendMsg
     | InputText String
     | InputSearchKey String
     | NewDocument
+    | SetLanguage Common.Syntax.Language
     | ChangeDocumentDeleteStateFrom DocumentDeleteState
     | AskFoDocumentById String
     | AskFoDocumentBySlug String

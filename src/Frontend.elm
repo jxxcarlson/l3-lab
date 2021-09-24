@@ -4,6 +4,7 @@ import Authentication
 import Browser exposing (UrlRequest(..))
 import Browser.Events
 import Browser.Navigation as Nav
+import Common.Syntax
 import Config
 import Data
 import Document exposing (Access(..))
@@ -75,6 +76,7 @@ init url key =
       , currentDocument = Data.notSignedIn
       , printingState = PrintWaiting
       , documentDeleteState = WaitingForDeleteAction
+      , language = Common.Syntax.Markdown
       }
     , Cmd.batch [ Frontend.Cmd.setupWindow, sendToBackend (GetDocumentBySlugForGuest url.path) ]
     )
@@ -232,6 +234,9 @@ update msg model =
         NewDocument ->
             Frontend.Update.newDocument model
 
+        SetLanguage lang ->
+            ( { model | language = lang }, Cmd.none )
+
         ChangeDocumentDeleteStateFrom docDeleteState ->
             case docDeleteState of
                 WaitingForDeleteAction ->
@@ -353,7 +358,7 @@ updateFromBackend msg model =
                 message =
                     "Documents: " ++ String.fromInt (List.length documents)
             in
-            ( { model | currentDocument = doc, documents = documents }, Cmd.none )
+            ( { model | currentDocument = doc, language = doc.language, documents = documents }, Cmd.none )
 
         SendDocuments docs ->
             let
