@@ -1,4 +1,4 @@
-module Markdown.Line exposing (classify)
+module Markdown.Line exposing (lineType)
 
 import Common.Debug exposing (debug3)
 import Common.Library.ParserTools as ParserTools
@@ -6,16 +6,39 @@ import Common.Line as Line
 import Parser exposing ((|.), (|=), Parser)
 
 
-classify : String -> { indent : Int, lineType : Line.LineType, content : String }
-classify str =
+
+--classify : String -> { indent : Int, lineType : Line.LineType, content : String }
+--classify str =
+--    let
+--        leadingSpaces =
+--            Line.countLeadingSpaces str
+--
+--        nibble str_ =
+--            String.dropLeft (String.length (ParserTools.nibble str_) + 1) str_
+--    in
+--    { indent = leadingSpaces, lineType = lineType (String.dropLeft leadingSpaces str) |> debug3 "classify, lineType", content = nibble str |> debug3 "classify, str" }
+
+
+classify : Bool -> String -> { indent : Int, lineType : Line.LineType, content : String }
+classify inVerbatimBlock str =
     let
         leadingSpaces =
             Line.countLeadingSpaces str
 
         nibble str_ =
             String.dropLeft (String.length (ParserTools.nibble str_) + 1) str_
+
+        provisionalLineType =
+            lineType (String.dropLeft leadingSpaces str)
+
+        lineType_ =
+            if inVerbatimBlock && provisionalLineType == Line.BlankLine then
+                Line.VerbatimLine
+
+            else
+                provisionalLineType
     in
-    { indent = leadingSpaces, lineType = lineType (String.dropLeft leadingSpaces str) |> debug3 "classify, lineType", content = nibble str |> debug3 "classify, str" }
+    { indent = leadingSpaces, lineType = lineType_, content = nibble str }
 
 
 lineType : String -> Line.LineType
