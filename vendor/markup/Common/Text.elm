@@ -131,7 +131,7 @@ heading3 g s textList =
 
 
 heading4 g s textList =
-    simpleElement [ Font.size 14, Font.italic ] g s textList
+    simpleElement [ Font.size 14, Font.italic, Font.bold ] g s textList
 
 
 strong : Int -> Settings -> List Text -> Element msg
