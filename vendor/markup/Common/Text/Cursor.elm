@@ -171,9 +171,9 @@ nextCursor_ leadingChar cursor rules textToProcess =
                         ReduceArg ->
                             let
                                 _ =
-                                    debug2 "ReduceArg, contracted stack" contractStack cursor.stack
+                                    debug2 "ReduceArg, contractStackRepeatedly stack" (contractStackRepeatedly cursor.stack)
                             in
-                            ( cursor.committed, contractStack cursor.stack )
+                            ( cursor.committed, (contractTextIntoArg >> contractArgIntoMarked >> contractMarkedIntoArg) cursor.stack )
 
                         _ ->
                             ( cursor.committed, cursor.stack )
@@ -224,30 +224,106 @@ getScannerType cursor rule leadingChar =
                 VerbatimScan c
 
 
+contractMarkedIntoArg : List Text -> List Text
+contractMarkedIntoArg stack =
+    case stack of
+        (Marked name textList1 meta1) :: (Arg textList2 meta2) :: rest ->
+            let
+                _ =
+                    debug2 "contractMarkedIntoArg" 3
+            in
+            Arg [ Marked name textList1 meta1 ] { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id } :: rest
+
+        _ ->
+            stack
+
+
+contractTextIntoArg : List Text -> List Text
+contractTextIntoArg stack =
+    case stack of
+        (Text str meta1) :: (Arg textList2 meta2) :: rest ->
+            let
+                _ =
+                    debug2 "contractTextIntoArg" 3
+            in
+            Arg (Text str meta1 :: textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id } :: rest
+
+        _ ->
+            stack
+
+
+contractArgIntoMarked : List Text -> List Text
+contractArgIntoMarked stack =
+    case stack of
+        (Arg textList1 meta1) :: (Marked name textList2 meta2) :: rest ->
+            let
+                _ =
+                    debug2 "contractArgIntoMarked" 2
+            in
+            Marked name (textList1 ++ textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id } :: rest
+
+        _ ->
+            stack
+
+
 contract : Text -> Text -> Maybe Text
 contract text1 text2 =
-    case ( text1, text2 ) of
+    (let
+        _ =
+            debug3 "CONTRACT CASES (IN)" ( text1, text2 )
+     in
+     case ( text1, text2 ) of
         ( Arg textList1 meta1, Arg textList2 meta2 ) ->
+            let
+                _ =
+                    debug2 "contract" 1
+            in
             Just <| Arg (textList1 ++ textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id }
 
         ( Arg textList1 meta1, Marked name textList2 meta2 ) ->
+            let
+                _ =
+                    debug2 "contract" 2
+            in
             Just <| Marked name (textList1 ++ textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id }
 
         ( Text str meta1, Arg textList2 meta2 ) ->
+            let
+                _ =
+                    debug2 "contract" 3
+            in
             Just <| Arg (Text str meta1 :: textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id }
 
         ( Marked name textList1 meta1, Arg textList2 meta2 ) ->
+            let
+                _ =
+                    debug2 "contract" 4
+            in
             Just <| Arg (Marked name textList1 meta1 :: textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id }
 
         ( Text str meta1, Marked name textList2 meta2 ) ->
+            let
+                _ =
+                    debug2 "contract" 5
+            in
             Just <| Marked name (Text str meta1 :: textList2) { start = meta2.start, end = meta1.end, indent = 0, id = meta2.id }
 
         ( _, _ ) ->
+            let
+                _ =
+                    debug2 "contract" 0
+            in
             Nothing
+    )
+        |> debug3 "CONTRACT CASES (OUT)"
 
 
 contract3 : Text -> Text -> Text -> Maybe Text
 contract3 text1 text2 text3 =
+    let
+        _ =
+            debug3 "contract3, stack" "-"
+    in
     case ( text1, text2, text3 ) of
         ( Marked a [] meta1, _, Marked b [] meta3 ) ->
             if a == b then
@@ -271,7 +347,7 @@ contract3Stack : List Text -> List Text
 contract3Stack stack =
     let
         _ =
-            debug3 "contractStack, stack" stack
+            debug3 "contractStack3, stack" stack
     in
     case stack of
         text1 :: text2 :: text3 :: rest ->
@@ -292,6 +368,10 @@ contract3Stack stack =
 
 contractStack : List Text -> List Text
 contractStack =
+    let
+        _ =
+            debug2 "contractStack" "yes!"
+    in
     contract2Stack >> contract3Stack
 
 
@@ -327,6 +407,10 @@ contract2Stack stack =
 
 contractStackRepeatedly : List Text -> List Text
 contractStackRepeatedly stack =
+    let
+        _ =
+            debug1 "contractStackRepeatedly" "!!!"
+    in
     (case stack of
         text1 :: text2 :: text3 :: rest ->
             case contract3 text1 text2 text3 of
