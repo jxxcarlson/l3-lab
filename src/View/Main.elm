@@ -296,7 +296,7 @@ viewRendered model =
         ]
         [ View.Utility.katexCSS
         , E.column [ E.spacing 8, E.width (E.px (panelWidth_ model - 40)) ]
-            (Markup.API.compile model.currentDocument.language model.counter (settings model) (String.lines model.currentDocument.content))
+            (Markup.API.renderFancy model.currentDocument.language model.counter (String.lines model.currentDocument.content))
 
         --  (Markup.API.compile Markup.API.Markdown model.counter (settings model) (String.lines model.currentDocument.content))
         ]

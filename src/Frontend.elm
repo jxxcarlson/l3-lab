@@ -207,7 +207,7 @@ update msg model =
                     Markup.API.parse document.language 0 (String.lines document.content)
 
                 newTitle =
-                    Markup.API.getTitle document.language ast |> Maybe.withDefault "Untitled"
+                    Markup.API.getTitle ast |> Maybe.withDefault "Untitled"
 
                 newSlug =
                     Maybe.map (Document.changeSlug newTitle) document.slug |> Maybe.withDefault "SLUG"
