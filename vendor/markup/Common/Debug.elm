@@ -4,16 +4,28 @@ import Console
 
 
 debugOn =
-    True
+    False
 
 
 debug1 str =
-    identity
+    if debugOn then
+        Debug.log (Console.magenta str)
+
+    else
+        identity
 
 
 debug2 str =
-    identity
+    if debugOn then
+        Debug.log (Console.cyan str)
+
+    else
+        identity
 
 
 debug3 str =
-    identity
+    if debugOn then
+        Debug.log (Console.yellow str)
+
+    else
+        identity
