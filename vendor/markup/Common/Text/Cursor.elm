@@ -1,12 +1,13 @@
 module Common.Text.Cursor exposing (Step(..), TextCursor, init, nextCursor, parseLoop)
 
+import Common.BlockParserTools exposing (reverseContents)
 import Common.Debug exposing (debug1, debug2, debug3)
 import Common.Library.ParserTools as ParserTools exposing (StringData)
 import Common.Syntax as Syntax exposing (Text(..))
 import Common.Text
 import Common.Text.Error exposing (Context(..), Problem(..))
 import Common.Text.Reduce as Reduce
-import Common.Text.Rule as Rule exposing (Action(..), Rule, Rules)
+import Common.Text.Rule as Rule exposing (Action(..), ParseEnd(..), Rule, Rules)
 import List.Extra
 import Parser.Advanced
 
@@ -84,7 +85,9 @@ nextCursor rules cursor =
                     Done cursor
 
                 Just ( item, rest ) ->
-                    Done { cursor | committed = Common.Text.reverse item :: cursor.committed, stack = rest }
+                    -- Done { cursor | committed = Common.Text.reverse item :: cursor.committed, stack = rest }
+                    -- TODO: need to think this though and also do error handling
+                    Done { cursor | committed = (List.map Common.Text.reverse (item :: rest) |> List.reverse) ++ cursor.committed, stack = [] }
 
         Just ( leadingChar, _ ) ->
             -- NOTE: use rules here
@@ -154,6 +157,7 @@ nextCursor_ leadingChar cursor rules textToProcess =
                             in
                             case List.head newStack of
                                 Just item ->
+                                    -- ( Text " " (Syntax.dummyMeta 0 0) :: (Common.Text.reverse item |> debug2 "Common.Text.reverse") :: cursor.committed, List.drop 1 newStack )
                                     ( Text " " (Syntax.dummyMeta 0 0) :: (Common.Text.reverse item |> debug2 "Common.Text.reverse") :: cursor.committed, List.drop 1 newStack )
 
                                 Nothing ->
@@ -170,17 +174,6 @@ nextCursor_ leadingChar cursor rules textToProcess =
                             else
                                 ( cursor.committed, Text stringData.content meta :: cursor.stack )
 
-                        ShiftText2 ->
-                            let
-                                textList =
-                                    String.words stringData.content |> List.map (\s -> Text (s ++ " ") meta)
-                            in
-                            if cursor.stack == [] then
-                                ( Common.Text.combine textList ++ cursor.committed, cursor.stack )
-
-                            else
-                                ( cursor.committed, textList ++ cursor.stack )
-
                         ShiftMarked ->
                             --  ( cursor.committed, Marked (String.trim stringData.content) [] meta :: cursor.stack )
                             let
@@ -196,6 +189,26 @@ nextCursor_ leadingChar cursor rules textToProcess =
                         ShiftVerbatim c ->
                             ( cursor.committed, Verbatim c "" meta :: cursor.stack |> Reduce.contract3Stack )
 
+                        ShiftText2 ->
+                            let
+                                textList =
+                                    String.words stringData.content |> List.map (\s -> Text (s ++ " ") meta)
+                            in
+                            if cursor.stack == [] then
+                                ( Common.Text.combine textList ++ cursor.committed, cursor.stack )
+
+                            else
+                                -- TODO: Working on this!!! change is to add List.reverse
+                                ( cursor.committed, textList ++ cursor.stack )
+
+                        ShiftVerbatim2 c ->
+                            let
+                                mark =
+                                    -- NOTE: use rules here
+                                    String.dropLeft rule.dropLeadingChars stringData.content |> String.trimRight |> rule.transform
+                            in
+                            ( cursor.committed, Verbatim mark (String.replace "`" "" stringData.content) meta :: cursor.stack |> Reduce.contract3Stack )
+
                         ShiftArg ->
                             ( cursor.committed, Arg [] meta :: cursor.stack )
 
@@ -207,7 +220,8 @@ nextCursor_ leadingChar cursor rules textToProcess =
                             ( cursor.committed, (Reduce.markedIntoMarked >> Reduce.textIntoMarked >> Reduce.textIntoArg >> Reduce.argIntoMarked >> Reduce.markedIntoArg) cursor.stack |> debug3 "ReduceArg (OUT)" )
 
                         ReduceArgList ->
-                            ( cursor.committed, Reduce.argList cursor.stack )
+                            -- TODO: change?? |> List.map Common.Text.reverseMarked
+                            ( cursor.committed, Reduce.argList cursor.stack |> debug3 "ReduceArgList (2)" )
 
                         _ ->
                             ( cursor.committed, cursor.stack )
@@ -233,11 +247,15 @@ nextCursor_ leadingChar cursor rules textToProcess =
 
 getParser : Rule -> String -> Result (List (Parser.Advanced.DeadEnd Context Problem)) StringData
 getParser rule =
-    if rule.spaceFollows then
-        ParserTools.getTextAndSpaces rule.start rule.continue
+    case rule.parseEnd of
+        EndNormal ->
+            ParserTools.getText rule.start rule.continue
 
-    else
-        ParserTools.getText rule.start rule.continue
+        EndEatSpace ->
+            ParserTools.getTextAndSpaces rule.start rule.continue
+
+        EndEatSymbol sym ->
+            ParserTools.getTextSymbol sym rule.start rule.continue
 
 
 getScannerType : TextCursor -> Rule -> Char -> ScannerType

@@ -1,4 +1,4 @@
-module Common.Text exposing (combine, reverse)
+module Common.Text exposing (combine, reverse, reverseMarked)
 
 import Common.Syntax exposing (Text(..))
 
@@ -11,6 +11,16 @@ reverse text =
 
         Arg textList meta ->
             Arg (List.reverse textList) meta
+
+        _ ->
+            text
+
+
+reverseMarked : Text -> Text
+reverseMarked text =
+    case text of
+        Marked name textList meta ->
+            Marked name (List.reverse textList) meta
 
         _ ->
             text
