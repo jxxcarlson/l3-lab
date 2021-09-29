@@ -22,7 +22,12 @@ import Element.Font
 import L1.Rule
 import L1.Transform
 import Markdown.Rule
+import MiniLaTeX.MathMacro
 import MiniLaTeX.Rule
+
+
+type alias Accumulator =
+    { macroDict : MiniLaTeX.MathMacro.MathMacroDict }
 
 
 {-| -}
@@ -34,12 +39,15 @@ getTitle =
 renderFancy : Syntax.Language -> Int -> List String -> List (Element msg)
 renderFancy language count source =
     let
+        parseData =
+            parseAccum language count source
+
         ast =
-            parse language count source
+            parseData.blocks
 
         toc_ : List (Element msg)
         toc_ =
-            tableOfContents count { width = 500 } ast
+            tableOfContents count { width = 500 } parseData.accumulator ast
 
         titleString =
             ASTTools.getTitle ast |> Maybe.withDefault "Untitled" |> String.replace "\n" " "
@@ -52,20 +60,24 @@ renderFancy language count source =
 
         renderedText_ : List (Element msg)
         renderedText_ =
-            render count { width = 500 } ast
+            render count { width = 500 } parseData.accumulator ast
     in
     docTitle :: toc :: renderedText_
 
 
-tableOfContents : Int -> Settings -> List Syntax.TextBlock -> List (Element msg)
-tableOfContents generation settings blocks =
-    blocks |> ASTTools.getHeadings |> Text.viewTOC generation settings
+tableOfContents : Int -> Settings -> Accumulator -> List Syntax.TextBlock -> List (Element msg)
+tableOfContents generation settings accumulator blocks =
+    blocks |> ASTTools.getHeadings |> Text.viewTOC generation settings accumulator
 
 
 {-| -}
 compile : Syntax.Language -> Int -> Settings -> List String -> List (Element msg)
 compile language generation settings lines =
-    lines |> parse language generation |> TextBlock.render generation settings
+    let
+        parseData =
+            parseAccum language generation lines
+    in
+    parseData.blocks |> TextBlock.render generation settings parseData.accumulator
 
 
 render =
@@ -87,6 +99,15 @@ parse language generation lines =
     lines
         |> Block.parse language generation
         |> List.map (Syntax.map (parseText language))
+
+
+parseAccum : Syntax.Language -> Int -> List String -> { blocks : List Syntax.TextBlock, accumulator : Accumulator }
+parseAccum language generation lines =
+    let
+        state =
+            Block.runParser language generation lines
+    in
+    { blocks = List.map (Syntax.map (parseText language)) state.output, accumulator = state.accumulator }
 
 
 
