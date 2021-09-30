@@ -107,7 +107,7 @@ mathBlock generation settings accumulator textList =
 prepareMathLines : Accumulator -> List String -> String
 prepareMathLines accumulator stringList =
     stringList
-        |> List.filter (\line -> String.left 6 line /= "\\label")
+        |> List.filter (\line -> String.left 6 (String.trimLeft line) /= "\\label")
         |> String.join "\n"
         |> MiniLaTeX.MathMacro.evalStr accumulator.macroDict
 
