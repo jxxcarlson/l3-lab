@@ -45,7 +45,7 @@ hideIf condition element =
 setViewportForElement : String -> Cmd FrontendMsg
 setViewportForElement id =
     Dom.getViewportOf "__RENDERED_TEXT__"
-        |> Task.andThen (\vp -> getElementWithViewPort vp id)
+        |> Task.andThen (\vp -> getElementWithViewPort vp (Debug.log "ID in setViewportForElement" id))
         |> Task.attempt Types.SetViewPortForElement
 
 
