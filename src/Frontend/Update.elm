@@ -8,7 +8,7 @@ module Frontend.Update exposing
 import Document exposing (Document)
 import Lamdera exposing (sendToBackend)
 import List.Extra
-import Markup.Lang
+import Lang.Lang
 import Types exposing (..)
 
 
@@ -44,13 +44,13 @@ newDocument model =
 
                     title =
                         case model.language of
-                            Markup.Lang.L1 ->
+                            Lang.Lang.L1 ->
                                 "[title New Document]"
 
-                            Markup.Lang.Markdown ->
+                            Lang.Lang.Markdown ->
                                 "# New Document"
 
-                            Markup.Lang.MiniLaTeX ->
+                            Lang.Lang.MiniLaTeX ->
                                 "\\title{New Document}"
 
                     doc =

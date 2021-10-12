@@ -1,17 +1,16 @@
 module Markup.Expr exposing (parseExpr, parseToBlock, run)
 
 import Either
+import Lang.Lang exposing (Lang(..))
+import Lang.Reduce.L1 as L1
+import Lang.Reduce.Markdown as Markdown
+import Lang.Reduce.MiniLaTeX as MiniLaTeX
 import List.Extra
 import Markup.AST as AST exposing (Expr)
 import Markup.Block as Block exposing (Block)
 import Markup.Common exposing (Step(..), loop)
 import Markup.Debugger exposing (..)
 import Markup.Error exposing (ErrorData, Problem(..))
-import Markup.L1 as L1
-import Markup.Lang exposing (Lang(..))
-import Markup.Markdown as Markdown
-import Markup.Meta exposing (dummy)
-import Markup.MiniLaTeX as MiniLaTeX
 import Markup.State exposing (State)
 import Markup.Token as Token exposing (Token(..), dummyLoc)
 import Markup.Tokenizer as Tokenizer
@@ -88,13 +87,6 @@ init str =
 -}
 nextState : Lang -> State -> Step State State
 nextState lang state_ =
-    let
-        _ =
-            state_.stack |> debug1 ("STACK (" ++ String.fromInt state_.count ++ ")")
-
-        _ =
-            state_.committed |> debug2 ("COMMITTED (" ++ String.fromInt state_.count ++ ")")
-    in
     { state_ | count = state_.count + 1 }
         -- |> debug2 ("STATE (" ++ String.fromInt (state_.count + 1) ++ ")")
         |> reduce lang
@@ -124,9 +116,6 @@ processToken lang state =
     case Tokenizer.get lang state.scanPointer (String.dropLeft state.scanPointer state.sourceText) of
         TokenError errorData meta ->
             let
-                _ =
-                    debug1 "processToken (1), STACK" state.stack
-
                 ( row, col ) =
                     List.map (\item -> ( item.row, item.col )) errorData |> List.Extra.last |> Maybe.withDefault ( 1, 1 ) |> debug4 "(row, col)"
 
@@ -146,11 +135,6 @@ processToken lang state =
             Loop { state | committed = errorValue state errorData :: state.committed, scanPointer = state.scanPointer + tokenLength + 1 }
 
         newToken ->
-            let
-                _ =
-                    debug1 "processToken (2), STACK" state.stack
-            in
-            -- Process the token: reduce the stack, then shift the token onto it.
             Loop (shift newToken (reduce lang state))
 
 

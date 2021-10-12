@@ -8,7 +8,7 @@ import Data exposing (DataDict)
 import Document exposing (Document)
 import Http
 import Markup.API
-import Markup.Lang
+import Lang.Lang
 import Random
 import Time
 import Url exposing (Url)
@@ -37,7 +37,7 @@ type alias FrontendModel =
     -- DOCUMENT
     , currentDocument : Document
     , documents : List Document
-    , language : Markup.Lang.Lang
+    , language : Lang.Lang.Lang
     , inputSearchKey : String
     , printingState : PrintingState
     , documentDeleteState : DocumentDeleteState
@@ -97,7 +97,7 @@ type FrontendMsg
     | InputText String
     | InputSearchKey String
     | NewDocument
-    | SetLanguage Markup.Lang.Lang
+    | SetLanguage Lang.Lang.Lang
     | ChangeDocumentDeleteStateFrom DocumentDeleteState
     | AskFoDocumentById String
     | AskFoDocumentBySlug String

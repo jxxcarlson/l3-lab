@@ -14,7 +14,7 @@ module Document exposing
     )
 
 import Markup.API
-import Markup.Lang
+import Lang.Lang
 import Time
 import User exposing (User)
 
@@ -117,7 +117,7 @@ type alias Document =
     , content : String
     , access : Access
     , slug : Maybe String
-    , language : Markup.Lang.Lang
+    , language : Lang.Lang.Lang
     }
 
 
@@ -142,7 +142,7 @@ empty =
     , content = ""
     , access = Private
     , slug = Nothing
-    , language = Markup.Lang.Markdown
+    , language = Lang.Lang.Markdown
     }
 
 

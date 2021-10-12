@@ -15,7 +15,7 @@ import Html exposing (Html)
 import Lamdera exposing (sendToBackend)
 import List.Extra
 import Markup.API
-import Markup.Lang
+import Lang.Lang
 import Process
 import Task
 import Types exposing (..)
@@ -76,7 +76,7 @@ init url key =
       , currentDocument = Data.notSignedIn
       , printingState = PrintWaiting
       , documentDeleteState = WaitingForDeleteAction
-      , language = Markup.Lang.Markdown
+      , language = Lang.Lang.Markdown
       }
     , Cmd.batch [ Frontend.Cmd.setupWindow, sendToBackend (GetDocumentBySlugForGuest url.path) ]
     )
