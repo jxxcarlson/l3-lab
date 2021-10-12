@@ -250,7 +250,7 @@ update msg model =
                     Frontend.Update.deleteDocument model
 
         FetchDocuments searchTerm ->
-            ( model, sendToBackend (GetDocumentsWithQuery (model.currentUser |> Debug.log "XXX. FetchDocuments for") searchTerm) )
+            ( model, sendToBackend (GetDocumentsWithQuery model.currentUser searchTerm) )
 
         ExportToMarkdown ->
             let

@@ -87,16 +87,8 @@ updateFromFrontend sessionId clientId msg model =
 
         -- USER
         SignInOrSignUp username encryptedPassword ->
-            let
-                _ =
-                    Debug.log "XXX (1), SignInOrSignUp for" username
-            in
             case Dict.get username model.authenticationDict of
                 Just userData ->
-                    let
-                        _ =
-                            Debug.log "XXX (2), SignInOrSignUp for" username
-                    in
                     if Authentication.verify username encryptedPassword model.authenticationDict then
                         let
                             predicate =
@@ -121,10 +113,6 @@ updateFromFrontend sessionId clientId msg model =
 
         -- DOCUMENTS
         GetUserDocuments username ->
-            let
-                _ =
-                    Debug.log "XXX, GetUserDocuments for" username
-            in
             case username of
                 "guest" ->
                     ( model, sendToFrontend clientId (SendDocuments (List.filter (\doc -> doc.access == Public) model.documents)) )
@@ -134,11 +122,8 @@ updateFromFrontend sessionId clientId msg model =
 
         GetDocumentsWithQuery user (Query searchTerm) ->
             let
-                _ =
-                    Debug.log "XXX,  GetDocumentsWithQuery" user
-
                 username =
-                    Maybe.map .username user |> Debug.log "XXX, USERNAME"
+                    Maybe.map .username user
 
                 docsFound =
                     Document.search user searchTerm model.documents
