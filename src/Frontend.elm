@@ -4,7 +4,6 @@ import Authentication
 import Browser exposing (UrlRequest(..))
 import Browser.Events
 import Browser.Navigation as Nav
-import Common.Syntax
 import Config
 import Data
 import Document exposing (Access(..))
@@ -16,6 +15,7 @@ import Html exposing (Html)
 import Lamdera exposing (sendToBackend)
 import List.Extra
 import Markup.API
+import Markup.Lang
 import Process
 import Task
 import Types exposing (..)
@@ -76,7 +76,7 @@ init url key =
       , currentDocument = Data.notSignedIn
       , printingState = PrintWaiting
       , documentDeleteState = WaitingForDeleteAction
-      , language = Common.Syntax.Markdown
+      , language = Markup.Lang.Markdown
       }
     , Cmd.batch [ Frontend.Cmd.setupWindow, sendToBackend (GetDocumentBySlugForGuest url.path) ]
     )
@@ -203,11 +203,11 @@ update msg model =
                 document =
                     model.currentDocument
 
-                ast =
+                parseData =
                     Markup.API.parse document.language 0 (String.lines document.content)
 
                 newTitle =
-                    Markup.API.getTitle ast |> Maybe.withDefault "Untitled"
+                    Markup.API.getTitle parseData.ast |> Maybe.withDefault "Untitled"
 
                 newSlug =
                     Maybe.map (Document.changeSlug newTitle) document.slug |> Maybe.withDefault "SLUG"

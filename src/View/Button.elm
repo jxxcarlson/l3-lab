@@ -23,7 +23,6 @@ module View.Button exposing
     , toggleEditor
     )
 
-import Common.Syntax
 import Config
 import Document exposing (Access(..))
 import Element as E exposing (Element)
@@ -31,6 +30,7 @@ import Element.Background as Background
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Markup.Lang
 import Types exposing (..)
 import View.Color as Color
 import View.Style
@@ -273,37 +273,37 @@ getUsers =
 markupLanguageButton model =
     let
         bg =
-            if model.language == Common.Syntax.Markdown then
+            if model.language == Markup.Lang.Markdown then
                 Background.color Color.darkRed
 
             else
                 Background.color (E.rgb255 40 40 40)
     in
-    buttonTemplate [ bg ] (SetLanguage Common.Syntax.Markdown) "Markdown"
+    buttonTemplate [ bg ] (SetLanguage Markup.Lang.Markdown) "Markdown"
 
 
 l1LanguageButton model =
     let
         bg =
-            if model.language == Common.Syntax.L1 then
+            if model.language == Markup.Lang.L1 then
                 Background.color Color.darkRed
 
             else
                 Background.color (E.rgb255 40 40 40)
     in
-    buttonTemplate [ bg ] (SetLanguage Common.Syntax.L1) "L1"
+    buttonTemplate [ bg ] (SetLanguage Markup.Lang.L1) "L1"
 
 
 miniLaTeXLanguageButton model =
     let
         bg =
-            if model.language == Common.Syntax.MiniLaTeX then
+            if model.language == Markup.Lang.MiniLaTeX then
                 Background.color Color.darkRed
 
             else
                 Background.color (E.rgb255 40 40 40)
     in
-    buttonTemplate [ bg ] (SetLanguage Common.Syntax.MiniLaTeX) "MiniLaTeX"
+    buttonTemplate [ bg ] (SetLanguage Markup.Lang.MiniLaTeX) "MiniLaTeX"
 
 
 

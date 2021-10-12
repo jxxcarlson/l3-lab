@@ -2,7 +2,7 @@
     "type": "application",
     "source-directories": [
         "src",
-        "vendor/markup"
+        "vendor/markup2/src"
     ],
     "elm-version": "0.19.1",
     "dependencies": {
@@ -39,7 +39,8 @@
             "mdgriffith/elm-ui": "1.1.8",
             "romariolopezc/elm-hmac-sha1": "3.0.0",
             "rtfeldman/console-print": "1.0.1",
-            "rtfeldman/elm-hex": "1.0.0"
+            "rtfeldman/elm-hex": "1.0.0",
+            "toastal/either": "3.5.2"
         },
         "indirect": {
             "JoshuaHall/elm-2d-array": "1.0.1",
@@ -57,7 +58,6 @@
             "ktonon/elm-word": "2.1.2",
             "mpizenberg/elm-pointer-events": "4.0.2",
             "pilatch/flip": "1.0.0",
-            "toastal/either": "3.5.2",
             "zwilias/elm-utf-tools": "2.0.1"
         }
     },

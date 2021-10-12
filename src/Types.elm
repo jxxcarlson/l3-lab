@@ -4,11 +4,11 @@ import Authentication exposing (AuthenticationDict)
 import Browser exposing (UrlRequest)
 import Browser.Dom as Dom
 import Browser.Navigation exposing (Key)
-import Common.Syntax
 import Data exposing (DataDict)
 import Document exposing (Document)
 import Http
 import Markup.API
+import Markup.Lang
 import Random
 import Time
 import Url exposing (Url)
@@ -37,7 +37,7 @@ type alias FrontendModel =
     -- DOCUMENT
     , currentDocument : Document
     , documents : List Document
-    , language : Common.Syntax.Language
+    , language : Markup.Lang.Lang
     , inputSearchKey : String
     , printingState : PrintingState
     , documentDeleteState : DocumentDeleteState
@@ -97,7 +97,7 @@ type FrontendMsg
     | InputText String
     | InputSearchKey String
     | NewDocument
-    | SetLanguage Common.Syntax.Language
+    | SetLanguage Markup.Lang.Lang
     | ChangeDocumentDeleteStateFrom DocumentDeleteState
     | AskFoDocumentById String
     | AskFoDocumentBySlug String
