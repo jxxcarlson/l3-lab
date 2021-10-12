@@ -94,7 +94,7 @@ niceSlug doc =
                     "no slug"
 
                 Just slug ->
-                    "https://l1-lab.lamdera.app/g/" ++ slug
+                    "https://l3-lab.lamdera.app/g/" ++ slug
 
         Private ->
             "(private)"
