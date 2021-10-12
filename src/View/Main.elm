@@ -123,7 +123,6 @@ notSignedInHeader model =
         , View.Input.passwordInput model
         , E.el [ E.height (E.px 31), E.paddingXY 12 3, Background.color Color.paleBlue ]
             (E.el [ E.centerY ] (E.text model.message))
-        , Button.toggleEditor model
         , Button.startupHelp
         ]
 
@@ -132,18 +131,22 @@ signedInHeader model user =
     E.row [ E.spacing 12 ]
         [ Button.signOut user.username
         , Button.fetchDocuments model.inputSearchKey
-        , Button.newDocument
-        , View.Utility.hideIf (userIsGuest model) (Button.deleteDocument model)
-        , View.Utility.hideIf (userIsGuest model) (Button.toggleAccess model)
-        , Button.toggleEditor model
+        , hideForGuest model <| Button.newDocument
+        , hideForGuest model <| Button.deleteDocument model
+        , hideForGuest model <| Button.toggleAccess model
+        , hideForGuest model <| Button.toggleEditor model
         , author model
         , wordCount model
-        , Button.miniLaTeXLanguageButton model
-        , Button.markupLanguageButton model
-        , Button.l1LanguageButton model
+        , hideForGuest model <| Button.miniLaTeXLanguageButton model
+        , hideForGuest model <| Button.markupLanguageButton model
+        , hideForGuest model <| Button.l1LanguageButton model
 
         -- , Button.help
         ]
+
+
+hideForGuest model =
+    View.Utility.hideIf (userIsGuest model)
 
 
 userIsGuest : Model -> Bool

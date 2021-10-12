@@ -31,38 +31,34 @@ notSignedIn =
 
 
 notSigneInText =
-    """[title Welcome to L1]
-
-[i L1 is an experiment in the design of markup languages and fault-tolerant parsers. ]
-
-[b Guest Access]
-
-::: [blue [i Click on the [b [violet Fetch] ]button above to see more documents.]]
-
-::: As a guest, you can create and edit documents.  However, your documents will not be saved.  You can also edit an existing public document.  Those edits will not be saved either.
-
-::: Here is a document to get started with: [ilink "A Sample Document" /s/jxxcarlson-a-sample-document-2021-08-03]
-
-[b User Account]
-
-::: To make a user account, first make sure that you are signed out.  If the leftmost button above says [quote guest], click it.  Then you will see a button [b Sign In | Sign Up].  That's the one to click.
-
-::: With a user account, you can create and save documents.  Please note, however, that the  L1 language is currently an experiment and so can change at any time.
+    """
+#  Welcome to L3-Lab
 
 
-[b Fetch and Filter]
+## Guest Access
 
-::: The [b Fetch] button retrieves documents from storage.
+- Click on the  *Fetch* button above to load publc documents
 
-::: If you only want to see some documents, put a keyword in the search box. Thus, if you only want to see documents pertaning to L1, put [quote l1] in the search box. Filtering is not case-sensitive. The special keywords [blue :public] and [blue :me] do what they say.
+- User Account
 
-:::  Filter the documents already fetched by putting a (different) keyword in the search box.
+- To make a user account, first make sure that you are signed out.  If the leftmost button above says *guest*, click it.  Then you will see a button *Sign In | Sign Up*.  That's the one to click.
+
+- With a user account, you can create and save documents.  Please note, however, that the  L1 language is currently an experiment and so can change at any time.
+
+
+## Fetch and Filter
+
+- *Fetch* button retrieves documents from storage.
+
+- If you only want to see some documents, put a keyword in the search box. Thus, if you only want to see documents pertaning to L1, put "l1" in the search box. Filtering is not case-sensitive. The special keywords  *:public* and *:me* do what they say.
+
+- Filter the documents already fetched by putting a (different) keyword in the search box.
 
 
 
-[b Comments]
+## Comments
 
-::: You can reach me, Jim Carlson, at jxxcarlson@gmail.com or on the Elm Slack as jxxcarlson.
+-  You can reach me, Jim Carlson, at jxxcarlson@gmail.com or on the Elm Slack as jxxcarlson.
 
 
 """

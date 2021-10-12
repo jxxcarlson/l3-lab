@@ -13,9 +13,9 @@ import Frontend.PDF as PDF
 import Frontend.Update
 import Html exposing (Html)
 import Lamdera exposing (sendToBackend)
+import Lang.Lang
 import List.Extra
 import Markup.API
-import Lang.Lang
 import Process
 import Task
 import Types exposing (..)
@@ -250,7 +250,7 @@ update msg model =
                     Frontend.Update.deleteDocument model
 
         FetchDocuments searchTerm ->
-            ( model, sendToBackend (GetDocumentsWithQuery model.currentUser searchTerm) )
+            ( model, sendToBackend (GetDocumentsWithQuery (model.currentUser |> Debug.log "XXX. FetchDocuments for") searchTerm) )
 
         ExportToMarkdown ->
             let

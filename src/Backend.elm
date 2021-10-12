@@ -23,7 +23,7 @@ app =
         { init = init
         , update = update
         , updateFromFrontend = updateFromFrontend
-        , subscriptions = \m -> Time.every 1000 Tick
+        , subscriptions = \m -> Time.every 10000 Tick
         }
 
 
@@ -87,12 +87,28 @@ updateFromFrontend sessionId clientId msg model =
 
         -- USER
         SignInOrSignUp username encryptedPassword ->
+            let
+                _ =
+                    Debug.log "XXX (1), SignInOrSignUp for" username
+            in
             case Dict.get username model.authenticationDict of
                 Just userData ->
+                    let
+                        _ =
+                            Debug.log "XXX (2), SignInOrSignUp for" username
+                    in
                     if Authentication.verify username encryptedPassword model.authenticationDict then
+                        let
+                            predicate =
+                                if username == "guest" then
+                                    \doc -> doc.access == Public
+
+                                else
+                                    \doc -> doc.username == username
+                        in
                         ( model
                         , Cmd.batch
-                            [ sendToFrontend clientId (SendDocuments (List.filter (\doc -> doc.username == username) model.documents))
+                            [ sendToFrontend clientId (SendDocuments (List.filter predicate model.documents))
                             , sendToFrontend clientId (SendUser userData.user)
                             ]
                         )
@@ -105,12 +121,24 @@ updateFromFrontend sessionId clientId msg model =
 
         -- DOCUMENTS
         GetUserDocuments username ->
-            ( model, sendToFrontend clientId (SendDocuments (List.filter (\doc -> doc.username == username) model.documents)) )
+            let
+                _ =
+                    Debug.log "XXX, GetUserDocuments for" username
+            in
+            case username of
+                "guest" ->
+                    ( model, sendToFrontend clientId (SendDocuments (List.filter (\doc -> doc.access == Public) model.documents)) )
+
+                _ ->
+                    ( model, sendToFrontend clientId (SendDocuments (List.filter (\doc -> doc.username == username) model.documents)) )
 
         GetDocumentsWithQuery user (Query searchTerm) ->
             let
+                _ =
+                    Debug.log "XXX,  GetDocumentsWithQuery" user
+
                 username =
-                    Maybe.map .username user
+                    Maybe.map .username user |> Debug.log "XXX, USERNAME"
 
                 docsFound =
                     Document.search user searchTerm model.documents
