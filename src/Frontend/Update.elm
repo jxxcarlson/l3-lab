@@ -7,8 +7,8 @@ module Frontend.Update exposing
 
 import Document exposing (Document)
 import Lamdera exposing (sendToBackend)
-import List.Extra
 import Lang.Lang
+import List.Extra
 import Types exposing (..)
 
 
@@ -58,7 +58,7 @@ newDocument model =
                             | title = title
                             , author = user.realname
                             , username = user.username
-                            , content = "[title New Document]"
+                            , content = title
                             , language = model.language
                         }
                 in
