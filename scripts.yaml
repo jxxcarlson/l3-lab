@@ -4,5 +4,6 @@ scripts:
      # - cp -r ../markup/src/ vendor/markup
      # - cp -r /Users/carlson/dev/bluesky/shift-reduce/src vendor/markup2/
      - cp -r /Users/jxxcarlson/dev/lamdera/bluesky/shift-reduce/src vendor/markup2/
+     - git co vendor/markup2/src/Markup/Debugger.elm
 
   cloc: cloc --by-file --exclude-dir=Evergreen src/
