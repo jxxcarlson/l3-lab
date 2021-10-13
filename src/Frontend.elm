@@ -188,7 +188,9 @@ update msg model =
             )
 
         GrantGuestAccess ->
-            ( { model | currentUser = Just User.guest, inputSearchKey = ":public" }, Cmd.none )
+            ( { model | currentUser = Just User.guest, inputSearchKey = ":public" }
+            , sendToBackend (SignInOrSignUp "guest" (Authentication.encryptForTransit "hohoho6666"))
+            )
 
         -- ADMIN
         AdminRunTask ->
