@@ -1,6 +1,6 @@
 module Block.BlockTools exposing (..)
 
-import Block.Block exposing (Block(..), BlockStatus(..), ExprM(..), Meta, SBlock(..))
+import Block.Block as Block exposing (Block(..), BlockStatus(..), ExprM(..), Meta, SBlock(..))
 import Expression.AST exposing (Expr(..))
 import Expression.ASTTools
 import Markup.Meta as Meta
@@ -20,6 +20,22 @@ name block =
 
         BError _ ->
             Nothing
+
+
+getMeta : Block -> Meta
+getMeta block =
+    case block of
+        Paragraph _ meta ->
+            meta
+
+        VerbatimBlock name_ _ _ meta ->
+            meta
+
+        Block name_ _ meta ->
+            meta
+
+        BError _ ->
+            Block.dummyMeta
 
 
 sblockName : SBlock -> Maybe String
@@ -76,7 +92,7 @@ make id firstLine str =
         lines =
             String.lines str
     in
-    SParagraph lines { begin = firstLine, end = firstLine + List.length lines, indent = 0, id = id, status = BlockIncomplete }
+    SParagraph lines { begin = firstLine, end = firstLine + List.length lines, indent = 0, id = id, status = BlockComplete }
 
 
 {-|

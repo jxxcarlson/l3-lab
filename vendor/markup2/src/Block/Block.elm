@@ -4,6 +4,7 @@ module Block.Block exposing
     , ExprM(..)
     , Meta
     , SBlock(..)
+    , dummyMeta
     )
 
 import Markup.Meta as Meta exposing (ExpressionMeta)
@@ -18,8 +19,13 @@ type alias Meta =
     }
 
 
+dummyMeta =
+    { begin = 0, end = 0, indent = 0, id = "ID", status = BlockComplete }
+
+
 type BlockStatus
-    = BlockIncomplete
+    = BlockIncomplete String
+    | MismatchedTags String String
     | BlockComplete
 
 

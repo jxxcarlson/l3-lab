@@ -1,13 +1,13 @@
 module Render.Block exposing (render)
 
 import Block.Block exposing (Block(..), BlockStatus(..))
-import Block.BlockTools
+import Block.BlockTools as Block
 import Block.State
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
-import Markup.Debugger exposing (debug3)
+import Markup.Debugger exposing (debug1, debug3)
 import Render.Math
 import Render.MathMacro
 import Render.Settings exposing (Settings)
@@ -26,6 +26,10 @@ render generation settings accumulator blocks =
 
 renderBlock : Int -> Settings -> Block.State.Accumulator -> Block -> Element msg
 renderBlock generation settings accumulator block =
+    let
+        _ =
+            debug1 "renderBlock, block status" (Block.getMeta block |> .status)
+    in
     case block of
         Paragraph textList _ ->
             paragraph
@@ -33,8 +37,8 @@ renderBlock generation settings accumulator block =
                 (List.map (Render.Text.render generation settings accumulator) textList)
 
         VerbatimBlock name lines _ meta ->
-            if meta.status == BlockIncomplete then
-                renderLinesIncomplete lines
+            if meta.status /= BlockComplete then
+                renderLinesIncomplete name meta.status lines
 
             else
                 case Dict.get name verbatimBlockDict of
@@ -45,8 +49,8 @@ renderBlock generation settings accumulator block =
                         f generation settings accumulator lines
 
         Block name blocks meta ->
-            if meta.status == BlockIncomplete then
-                renderBlocksIncomplete blocks
+            if meta.status /= BlockComplete then
+                renderBlocksIncomplete name meta.status blocks
 
             else
                 case Dict.get name blockDict of
@@ -60,32 +64,46 @@ renderBlock generation settings accumulator block =
             error desc
 
 
-renderBlocksIncomplete : List Block -> Element msg
-renderBlocksIncomplete blocks =
+renderBlocksIncomplete : String -> BlockStatus -> List Block -> Element msg
+renderBlocksIncomplete name status blocks =
     column
         [ Font.family
             [ Font.typeface "Inconsolata"
             , Font.monospace
             ]
         , Font.color codeColor
-        , paddingEach { left = 0, right = 0, top = 0, bottom = 8 }
-        , spacing 6
+        , spacing 8
         ]
-        [ Element.text <| Block.BlockTools.stringValueOfBlockList blocks ]
+        (message name status
+            :: (Element.text <| Block.stringValueOfBlockList blocks)
+            :: []
+        )
 
 
-renderLinesIncomplete : List String -> Element msg
-renderLinesIncomplete lines =
+message : String -> BlockStatus -> Element msg
+message name blockStatus =
+    case blockStatus of
+        BlockComplete ->
+            Element.none
+
+        MismatchedTags first second ->
+            Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Mismatched tags: " ++ first ++ " ≠ " ++ second)
+
+        BlockIncomplete str ->
+            Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unterminated block: " ++ name)
+
+
+renderLinesIncomplete : String -> BlockStatus -> List String -> Element msg
+renderLinesIncomplete name status lines =
     column
         [ Font.family
             [ Font.typeface "Inconsolata"
             , Font.monospace
             ]
-        , Font.color codeColor
-        , paddingEach { left = 0, right = 0, top = 0, bottom = 8 }
-        , spacing 6
+        , Font.color (Element.rgb 0 0 200)
+        , spacing 8
         ]
-        (List.map (\t -> el [] (text t)) lines)
+        (message name status :: List.map (\t -> el [] (text t)) lines)
 
 
 error str =
@@ -158,7 +176,7 @@ indent g s a textList =
 
 makeId : List Block -> Element.Attribute msg
 makeId blockList =
-    Utility.elementAttribute "id" (Block.BlockTools.stringValueOfBlockList blockList |> String.trim |> makeSlug)
+    Utility.elementAttribute "id" (Block.stringValueOfBlockList blockList |> String.trim |> makeSlug)
 
 
 makeSlug : String -> String
