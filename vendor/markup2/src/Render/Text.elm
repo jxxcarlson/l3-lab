@@ -1,12 +1,11 @@
 module Render.Text exposing (render, viewTOC)
 
+import Block.Block exposing (ExprM(..))
 import Dict exposing (Dict)
 import Element exposing (Element, alignLeft, alignRight, centerX, column, el, newTabLink, px, spacing)
 import Element.Background as Background
 import Element.Font as Font
-import Markup.ASTTools as ASTTools
-import Markup.Block exposing (ExprM(..))
-import Render.AST2
+import Expression.ASTTools as ASTTools
 import Render.Math
 import Render.MathMacro
 import Render.Settings exposing (Settings)
@@ -72,9 +71,12 @@ markupDict =
         , ( "heading3", \g s a textList -> heading3 g s a textList )
         , ( "heading4", \g s a textList -> heading4 g s a textList )
         , ( "heading5", \g s a textList -> italic g s a textList )
+        , ( "skip", \g s a textList -> skip g s a textList )
         , ( "link", \g s a textList -> link g s a textList )
         , ( "href", \g s a textList -> href g s a textList )
         , ( "image", \g s a textList -> image g s a textList )
+        , ( "texmacro", \g s a textList -> texmacro g s a textList )
+        , ( "texarg", \g s a textList -> texarg g s a textList )
 
         -- MiniLaTeX stuff
         , ( "term", \g s a textList -> term g s a textList )
@@ -92,6 +94,25 @@ verbatimDict =
         , ( "code", \g s a str -> code g s a str )
         , ( "math", \g s a str -> math g s a str )
         ]
+
+
+texmacro g s a textList =
+    macro1 (\str -> Element.el [] (Element.text ("\\" ++ str))) g s a textList
+
+
+texarg g s a textList =
+    macro1 (\str -> Element.el [] (Element.text ("{" ++ str ++ "}"))) g s a textList
+
+
+macro1 : (String -> Element msg) -> Int -> Settings -> Accumulator -> List ExprM -> Element msg
+macro1 f g s a textList =
+    case ASTTools.exprListToStringList textList of
+        -- TODO: temporary fix: parse is producing the args in reverse order
+        arg1 :: _ ->
+            f arg1
+
+        _ ->
+            el [ Font.color errorColor ] (Element.text "Invalid arguments")
 
 
 macro2 : (String -> String -> Element msg) -> Int -> Settings -> Accumulator -> List ExprM -> Element msg
@@ -262,7 +283,7 @@ tocLink : List ExprM -> Element msg
 tocLink textList =
     let
         t =
-            Render.AST2.stringValueOfList textList
+            ASTTools.stringValueOfList textList
     in
     Element.link [] { url = internalLink t, label = Element.text t }
 
@@ -305,7 +326,7 @@ makeSlug str =
 
 makeId : List ExprM -> Element.Attribute msg
 makeId textList =
-    Utility.elementAttribute "id" (Render.AST2.stringValueOfList textList |> String.trim |> makeSlug)
+    Utility.elementAttribute "id" (ASTTools.stringValueOfList textList |> String.trim |> makeSlug)
 
 
 heading1 g s a textList =
@@ -335,6 +356,19 @@ heading4 g s a textList =
         [ Element.link [ makeId textList ]
             { url = internalLink "TITLE", label = Element.paragraph [] (List.map (render g s a) textList) }
         ]
+
+
+skip g s a textList =
+    let
+        numVal : String -> Int
+        numVal str =
+            String.toInt str |> Maybe.withDefault 0
+
+        f : String -> Element msg
+        f str =
+            column [ Element.spacingXY 0 (numVal str) ] [ Element.text "" ]
+    in
+    macro1 f g s a textList
 
 
 strong g s a textList =
