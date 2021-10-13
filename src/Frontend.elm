@@ -343,7 +343,11 @@ updateFromBackend msg model =
 
         -- USER
         SendUser user ->
-            ( { model | currentUser = Just user, inputSearchKey = ":me" }, Cmd.none )
+            if user.username == "guest" then
+                ( { model | currentUser = Just user, inputSearchKey = ":public" }, Cmd.none )
+
+            else
+                ( { model | currentUser = Just user, inputSearchKey = ":me" }, Cmd.none )
 
         LoginGuest ->
             ( { model | currentUser = Just User.guest, inputSearchKey = ":public" }
