@@ -1,6 +1,23 @@
-module Markup.Debugger exposing (debug3, debugBlue, debugCyan, debugMagenta, debugRed, debugYellow)
+module Markup.Debugger exposing
+    ( debug3
+    , debugBlue
+    , debugCyan
+    , debugGreen
+    , debugMagenta
+    , debugNull
+    , debugRed
+    , debugYellow
+    )
 
 import Console
+
+
+debugNull label =
+    identity
+
+
+debugGreen label =
+    identity
 
 
 debugYellow label =
