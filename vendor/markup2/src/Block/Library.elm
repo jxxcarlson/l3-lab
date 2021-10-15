@@ -3,7 +3,7 @@ module Block.Library exposing
     , processLine
     )
 
-import Block.Block exposing (BlockStatus(..), SBlock(..))
+import Block.Block as Block exposing (BlockStatus(..), SBlock(..))
 import Block.BlockTools as BlockTools
 import Block.Function as Function
 import Block.Line exposing (BlockOption(..), LineData, LineType(..))
@@ -15,6 +15,7 @@ import Lang.LineType.Markdown
 import Lang.LineType.MiniLaTeX
 import Markup.Debugger exposing (debug3, debugBlue, debugCyan, debugMagenta, debugRed, debugYellow)
 import Markup.ParserTools
+import Markup.Simplify as Simplify
 import Parser.Advanced
 
 
@@ -32,53 +33,117 @@ processLine : Lang -> State -> State
 processLine language state =
     case state.currentLineData.lineType of
         BeginBlock _ _ ->
-            createBlock state |> debugOut "BeginBlock (OUT)"
+            state
+                |> debugIn "BeginBlock"
+                |> createBlock
+                |> debugOut "BeginBlock (OUT)"
 
         BeginVerbatimBlock mark ->
-            if Just mark == Maybe.map getBlockName (Function.stackTop state) && (mark == "math" || mark == "code") then
+            let
+                _ =
+                    debugIn "BeginVerbatimBlock" state
+            in
+            (if Just mark == Maybe.map getBlockName (Function.stackTop state) && (mark == "math" || mark == "code") then
                 state |> endBlock mark
 
-            else
-                createBlock state |> debugOut "BeginVerbatimBlock (OUT)"
+             else
+                createBlock state
+            )
+                |> debugOut "BeginVerbatimBlock (OUT)"
 
         EndBlock name ->
+            let
+                _ =
+                    debugIn "EndBlock" state
+            in
             endBlock name state
 
         EndVerbatimBlock name ->
+            let
+                _ =
+                    debugIn "EndVerbatimBlock" state
+            in
             endBlock name state
 
         OrdinaryLine ->
-            (if state.previousLineData.lineType == BlankLine then
-                state
-                    |> Function.finalizeBlockStatusOfStackTop
-                    |> Function.simpleCommit
-                    -- |> createBlock
-                    |> Function.pushBlock (SParagraph [ state.currentLineData.content ] (newMeta state))
+            let
+                _ =
+                    debugIn "OrdinaryLine" state
+            in
+            case Function.stackTop state of
+                Nothing ->
+                    let
+                        _ =
+                            debugRed "Nothing branch of OrdinaryLine" state
+                    in
+                    state
+                        |> Function.pushBlock (SParagraph [ state.currentLineData.content ] (newMeta state))
+                        |> debugOut "End of Nothing Branch, OrdinaryLine"
 
-             else
-                case compare (Function.level state.currentLineData.indent) (Function.levelOfCurrentBlock state) of
-                    EQ ->
-                        case Function.stackTop state of
-                            Nothing ->
-                                state |> createBlock |> debugRed "TROUBLE HERE? (6)"
+                Just top ->
+                    (if state.previousLineData.lineType == BlankLine then
+                        -- A non-blank line followed a blank one, so create a new paragraph
+                        state
+                            |> Function.finalizeBlockStatusOfStackTop
+                            |> Function.simpleCommit
+                            |> Function.pushBlock (SParagraph [ state.currentLineData.content ] (newMeta state))
 
-                            Just _ ->
-                                Function.pushLineOntoStack state.index state.currentLineData.content state
+                     else
+                        -- Handle the case of a non-blank line following a non-blank line.
+                        -- The action depends on the indentation of the current line as compared to
+                        -- the level of the current block (top of the stack)
+                        let
+                            _ =
+                                debugRed "(i, j)" ( Function.level state.currentLineData.indent, Function.levelOfCurrentBlock state )
+                        in
+                        case compare (Function.level state.currentLineData.indent) (Function.levelOfCurrentBlock state) of
+                            EQ ->
+                                -- If the block on top of the stack is a paragraph, add the
+                                -- current line to it.
+                                if Block.typeOfSBlock top == Block.P then
+                                    Function.pushLineOntoStack state.index state.currentLineData.content state
 
-                    GT ->
-                        state |> addLineToStackTop |> debugRed "TROUBLE HERE? (2) — Add ordinary line to current block (GT)"
+                                else
+                                    -- Otherwise, commit the top block and create
+                                    -- a new paragraph with the current line
+                                    state
+                                        |> Function.liftBlockFunctiontoStateFunction Function.finalizeBlockStatus
+                                        |> Function.simpleCommit
+                                        |> Function.pushBlock (SParagraph [ state.currentLineData.content ] (newMeta state))
 
-                    LT ->
-                        if state.verbatimBlockInitialIndent == Function.levelOfCurrentBlock state then
-                            addLineToStackTop { state | errorMessage = Just { red = "Below: you forgot to indent the math text. This is needed for all blocks.  Also, remember the trailing dollar signs", blue = "" } }
-                                |> Function.insertErrorMessage
+                            GT ->
+                                -- The line has greater level than the block on top of the stack, so add it to the block
+                                -- TODO. Or should we create a new block?
+                                state |> addLineToStackTop |> debugRed "TROUBLE HERE? (2) — Add ordinary line to current block (GT)"
 
-                        else
-                            state |> commitBlock |> createBlock |> debugRed "TROUBLE HERE? (1)"
-            )
-                |> debugOut "OrdinaryLine (OUT)"
+                            LT ->
+                                -- If the block on top of the stack is a verbatim block and the indentation
+                                -- of the current line is less than the indentation level of the block,
+                                -- then signal an error but add it to the block anyway.  Otherwise, commit
+                                -- the current block and create a new one.
+                                -- TODO. In fact, in the else clause, we should reduce the stack, then create the block.
+                                if state.verbatimBlockInitialIndent == Function.levelOfCurrentBlock state then
+                                    addLineToStackTop
+                                        { state | errorMessage = Just { red = "Below: you forgot to indent the math text. This is needed for all blocks.  Also, remember the trailing dollar signs", blue = "" } }
+                                        |> Function.insertErrorMessage
+
+                                else
+                                    state
+                                        |> debugOut "OrdinaryLine, ELSE clause (1)"
+                                        |> Function.liftBlockFunctiontoStateFunction (Function.finalizeBlockStatus >> Function.reverseContents)
+                                        |> debugOut "OrdinaryLine, ELSE clause (2)"
+                                        |> Function.simpleCommit
+                                        |> debugOut "OrdinaryLine, ELSE clause (3)"
+                                        |> Function.pushLineOntoStack state.index state.currentLineData.content
+                                        |> debugOut "OrdinaryLine, ELSE clause (4)"
+                    )
+                        |> debugOut "OrdinaryLine (OUT)"
 
         VerbatimLine ->
+            let
+                _ =
+                    debugIn "VerbatimLine" state
+            in
             (if state.previousLineData.lineType == VerbatimLine then
                 addLineToStackTop state
 
@@ -93,22 +158,41 @@ processLine language state =
                     LT ->
                         -- TODO: is this OK?
                         if state.verbatimBlockInitialIndent == Function.levelOfCurrentBlock state then
-                            addLineToStackTop { state | errorMessage = Just { red = "Below: you forgot to indent the math text. This is needed for all blocks.  Also, remember the trailing dollar signs", blue = "" } }
+                            state
+                                |> addLineToStackTop
+                                |> Function.postErrorMessage
+                                    "Below: you forgot to indent the block text."
+                                    ""
                                 |> Function.insertErrorMessage
 
                         else
-                            state |> commitBlock |> createBlock
+                            -- The indentation level is too small.  Commit the block on
+                            -- top of the stack and create a new block.
+                            state
+                                |> commitBlock
+                                |> createBlock
             )
                 |> debugOut "VerbatimLine (OUT)"
 
         BlankLine ->
+            let
+                _ =
+                    debugIn "BlankLine" state
+            in
             (if state.previousLineData.lineType == BlankLine then
                 -- ignore the repeated blank line
                 state |> debugYellow "BlankLine 0"
 
              else
                 -- TODO.  Examine with care. I think this can all be reduced to index str state or commitBlock
-                case compare (Function.level state.currentLineData.indent) (Function.levelOfCurrentBlock state) of
+                let
+                    _ =
+                        debugRed "(i, j)" ( Function.level state.currentLineData.indent, Function.levelOfCurrentBlock state + 1 )
+
+                    _ =
+                        debugRed "STACK TOP" (List.head state.stack)
+                in
+                case compare (Function.level state.currentLineData.indent) (Function.levelOfCurrentBlock state + 1) of
                     EQ ->
                         -- As long as the line is of level greater than or equal to
                         -- the level of the current verbatim block on top of the stack,
@@ -129,15 +213,23 @@ processLine language state =
                             Just _ ->
                                 if state.lang == MiniLaTeX then
                                     state
-                                        |> commitBlock
+                                        |> Function.finalizeBlockStatusOfStackTop
+                                        |> Function.simpleCommit
                                         |> debugYellow "BlankLine 4"
 
                                 else
-                                    state |> commitBlock |> debugYellow "BlankLine 5"
+                                    state
+                                        |> Function.finalizeBlockStatusOfStackTop
+                                        |> Function.simpleCommit
+                                        |> debugYellow "BlankLine 5"
             )
                 |> debugOut "BlankLine (OUT)"
 
         Problem _ ->
+            let
+                _ =
+                    debugIn "Problem" state
+            in
             state
 
 
@@ -431,10 +523,10 @@ updateAccumulatorWithBlock sblock1 accumulator =
                 { accumulator | macroDict = LaTeX.MathMacro.makeMacroDict (String.join "\n" (List.map String.trimLeft contentList)) } |> debug3 "Accumulator (1)"
 
             else
-                accumulator |> debug3 "Accumlator (2)"
+                accumulator
 
         _ ->
-            accumulator |> debug3 "Accumulator (NADA)"
+            accumulator
 
 
 
@@ -498,5 +590,28 @@ debugSpare label state =
     state
 
 
+debugPrefix label state =
+    let
+        n =
+            String.fromInt state.index ++ ". "
+    in
+    n ++ "(" ++ label ++ ") "
+
+
+debugIn label state =
+    let
+        _ =
+            debugYellow (debugPrefix label state) state.currentLineData
+    in
+    state
+
+
 debugOut label state =
+    let
+        _ =
+            debugBlue (debugPrefix label state) (state.stack |> List.map Simplify.sblock)
+
+        _ =
+            debugMagenta (debugPrefix label state) (state.committed |> List.map Simplify.sblock)
+    in
     state

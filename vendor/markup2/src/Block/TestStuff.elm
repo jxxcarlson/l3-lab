@@ -1,13 +1,12 @@
-module Block.TestStuff exposing (m1, t1, t2, t3, t4, t5, t6)
+module Block.TestStuff exposing (l1, m1, t1, t2, t3, t4, t5, t6)
+
+
+l1 =
+    "| foo\n   a\n   b\n   | bar\n      c\n      d"
 
 
 m1 =
-    """
-$$
-   \\int_0^1
-
-## Code
-"""
+    "\\begin{code}\n   abc\n   def\n\\end{code}\n\nyada\nnada\n\n\\begin{math}\n   xyz\n\\end{math}"
 
 
 t1 =

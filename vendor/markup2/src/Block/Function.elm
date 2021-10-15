@@ -12,7 +12,10 @@ module Block.Function exposing
     , level
     , levelOfBlock
     , levelOfCurrentBlock
+    , liftBlockFunctiontoStateFunction
+    , mapStack
     , nameOfStackTop
+    , postErrorMessage
     , pushBlock
     , pushLineIntoBlock
     , pushLineOntoStack
@@ -34,7 +37,28 @@ import Block.BlockTools as BlockTools
 import Block.Line exposing (LineData)
 import Block.State exposing (State)
 import Lang.Lang exposing (Lang(..))
-import Markup.Debugger exposing (debugBlue)
+import Markup.Debugger exposing (debugBlue, debugMagenta)
+import Markup.Simplify as Simplify
+
+
+postErrorMessage : String -> String -> State -> State
+postErrorMessage red blue state =
+    { state | errorMessage = Just { red = red, blue = blue } }
+
+
+liftBlockFunctiontoStateFunction : (SBlock -> SBlock) -> State -> State
+liftBlockFunctiontoStateFunction f state =
+    { state | stack = mapStack f state.stack }
+
+
+mapStack : (SBlock -> SBlock) -> List SBlock -> List SBlock
+mapStack f stack =
+    case List.head stack of
+        Nothing ->
+            stack
+
+        Just top ->
+            f top :: List.drop 1 stack
 
 
 finalize : State -> State
@@ -99,20 +123,41 @@ reduce state =
             if levelOfBlock block1 > levelOfBlock block2 then
                 -- incorporate block1 into the block just below it in the stack
                 -- then reduce again
-                reduce { state | stack = SBlock name (block1 :: blocks) meta :: rest }
+                let
+                    _ =
+                        debugBlue "reduce" 0
+                in
+                reduce { state | stack = SBlock name (block1 :: blocks) meta :: rest } |> debugOut "REDUCE 0, OUT"
 
             else
+                let
+                    _ =
+                        debugBlue "reduce" 1
+                in
                 -- TODO: is this correct?
-                reduce { state | committed = finalize_ block1 :: finalize_ block2 :: state.committed, stack = List.drop 2 state.stack }
+                reduce { state | committed = finalize_ block1 :: finalize_ block2 :: state.committed, stack = List.drop 2 state.stack } |> debugOut "REDUCE 1, OUT"
 
         block :: [] ->
+            let
+                _ =
+                    debugBlue "reduce" 2
+            in
             -- Only one block remains on the stack, so commit it.
             -- TODO: do we need to consider error handling
-            { state | committed = finalize_ block :: state.committed, stack = [] }
+            if List.member (Block.Block.typeOfSBlock block) [ Block.Block.P, Block.Block.V ] then
+                { state | committed = reverseContents (setBlockStatus BlockComplete block) :: state.committed, stack = [] } |> debugOut "REDUCE 2a, OUT"
+
+            else
+                --- { state | committed = reverseContents (fbefinalizeBlockStatus block) :: state.committed, stack = [] } |> debugOut "REDUCE 2b, OUT"
+                { state | committed = reverseContents block :: state.committed, stack = [] } |> debugOut "REDUCE 2b, OUT"
 
         _ ->
+            let
+                _ =
+                    debugBlue "reduce" 3
+            in
             -- TODO. This ignores many cases.  Probably wrong.
-            state
+            state |> debugOut "REDUCE 3, OUT"
 
 
 
@@ -123,7 +168,7 @@ levelOfCurrentBlock : State -> Int
 levelOfCurrentBlock state =
     case stackTop state of
         Nothing ->
-            -1
+            0
 
         Just block ->
             levelOfBlock block
@@ -265,7 +310,23 @@ pushLineIntoBlock index str block =
 
 pushBlock : SBlock -> State -> State
 pushBlock block state =
-    { state | stack = block :: state.stack, blockCount = state.blockCount + 1 }
+    -- If the stack is empty, push the block onto it.
+    -- If the stack is not empty, mark the top of the stack as BlockComplete,
+    -- then push the block onto it.
+    case state.stack of
+        [] ->
+            let
+                _ =
+                    debugBlue "Running PUSHBLOCK" 1
+            in
+            { state | stack = block :: [], blockCount = state.blockCount + 1 }
+
+        next :: rest ->
+            let
+                _ =
+                    debugBlue "Running PUSHBLOCK" 2
+            in
+            { state | stack = block :: setBlockStatus BlockComplete next :: rest, blockCount = state.blockCount + 1 }
 
 
 changeStatusOfTopOfStack : BlockStatus -> State -> State
@@ -302,3 +363,26 @@ stackTop state =
 nameOfStackTop : State -> Maybe String
 nameOfStackTop state =
     Maybe.andThen BlockTools.sblockName (stackTop state)
+
+
+
+-- DEBUG
+
+
+debugPrefix label state =
+    let
+        n =
+            String.fromInt state.index ++ ". "
+    in
+    n ++ "(" ++ label ++ ") "
+
+
+debugOut label state =
+    let
+        _ =
+            debugBlue (debugPrefix label state) (state.stack |> List.map Simplify.sblock)
+
+        _ =
+            debugMagenta (debugPrefix label state) (state.committed |> List.map Simplify.sblock)
+    in
+    state
