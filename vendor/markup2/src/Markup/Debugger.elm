@@ -1,13 +1,17 @@
-module Markup.Debugger exposing (debug1, debug2, debug3, debug4)
+module Markup.Debugger exposing (debug3, debugBlue, debugCyan, debugMagenta, debugRed, debugYellow)
 
 import Console
 
 
-debug1 label =
+debugYellow label =
     identity
 
 
-debug2 label =
+debugMagenta label =
+    identity
+
+
+debugBlue label =
     identity
 
 
@@ -15,5 +19,9 @@ debug3 label =
     identity
 
 
-debug4 label =
+debugCyan label =
+    identity
+
+
+debugRed label =
     identity

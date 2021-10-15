@@ -3,7 +3,7 @@ module Markup.MiniLaTeX exposing (recoverFromError, reduce, reduceFinal)
 import Either exposing (Either(..))
 import Markup.AST as AST exposing (Expr)
 import Markup.Common exposing (Step(..))
-import Markup.Debugger exposing (debug1, debug2, debug3, debug4)
+import Markup.Debugger exposing (debug3, debug4, debugMagenta, debugYellow)
 import Markup.Simplify as Simplify
 import Markup.Stack as Stack
 import Markup.State exposing (State)
@@ -18,7 +18,7 @@ reduceFinal state =
     in
     case state.stack of
         (Right (AST.Expr name args loc)) :: [] ->
-            { state | committed = AST.Expr (transformMacroNames name) (List.reverse args) loc :: state.committed, stack = [] } |> debug1 "FINAL RULE 1"
+            { state | committed = AST.Expr (transformMacroNames name) (List.reverse args) loc :: state.committed, stack = [] } |> debugYellow "FINAL RULE 1"
 
         (Left (FunctionName name loc)) :: rest ->
             -- { state | committed = AST.Expr (transformMacroNames name) [] loc :: state.committed, stack = [] } |> debug1 "FINAL RULE 2"
@@ -32,7 +32,7 @@ reduceFinal state =
             { state | committed = red :: blue :: state.committed, stack = rest }
 
         _ ->
-            state |> debug1 "FINAL RULE 3"
+            state |> debugYellow "FINAL RULE 3"
 
 
 {-|
@@ -46,27 +46,27 @@ reduce state =
     case state.stack of
         -- create a text expression from a text token, clearing the stack
         (Left (Token.Text str loc)) :: [] ->
-            reduceAux (AST.Text str loc) [] state |> debug1 "RULE 1"
+            reduceAux (AST.Text str loc) [] state |> debugYellow "RULE 1"
 
         -- Recognize an Expr
         (Left (Token.Symbol "}" loc4)) :: (Left (Token.Text arg loc3)) :: (Left (Token.Symbol "{" _)) :: (Left (Token.FunctionName name loc1)) :: rest ->
-            { state | stack = Right (AST.Expr (transformMacroNames name) [ AST.Text arg loc3 ] { begin = loc1.begin, end = loc4.end }) :: rest } |> debug1 "RULE 2"
+            { state | stack = Right (AST.Expr (transformMacroNames name) [ AST.Text arg loc3 ] { begin = loc1.begin, end = loc4.end }) :: rest } |> debugYellow "RULE 2"
 
         -- Merge a new Expr into an existing one
         (Left (Token.Symbol "}" loc4)) :: (Left (Token.Text arg loc3)) :: (Left (Token.Symbol "{" _)) :: (Right (AST.Expr name args loc1)) :: rest ->
-            { state | stack = Right (AST.Expr (transformMacroNames name) (AST.Text arg loc3 :: args) { begin = loc1.begin, end = loc4.end }) :: rest } |> debug1 "RULE 3"
+            { state | stack = Right (AST.Expr (transformMacroNames name) (AST.Text arg loc3 :: args) { begin = loc1.begin, end = loc4.end }) :: rest } |> debugYellow "RULE 3"
 
         -- Merge new text into an existing Expr
         (Left (Token.Text str loc2)) :: (Right (AST.Expr name args loc1)) :: rest ->
-            { state | committed = AST.Text str loc2 :: AST.Expr (transformMacroNames name) (List.reverse args) loc1 :: state.committed, stack = rest } |> debug1 "RULE 4"
+            { state | committed = AST.Text str loc2 :: AST.Expr (transformMacroNames name) (List.reverse args) loc1 :: state.committed, stack = rest } |> debugYellow "RULE 4"
 
         -- create a new expression from an existing one which occurs as a function argument
         (Left (Token.Symbol "}" loc4)) :: (Right (AST.Expr exprName args loc3)) :: (Left (Token.Symbol "{" _)) :: (Left (Token.FunctionName fName loc1)) :: rest ->
-            { state | committed = AST.Expr fName [ AST.Expr (transformMacroNames exprName) args loc3 ] { begin = loc1.begin, end = loc4.end } :: state.committed, stack = rest } |> debug1 "RULE 5"
+            { state | committed = AST.Expr fName [ AST.Expr (transformMacroNames exprName) args loc3 ] { begin = loc1.begin, end = loc4.end } :: state.committed, stack = rest } |> debugYellow "RULE 5"
 
         -- create a verbatim expression from a verbatim token, clearing the stack
         (Left (Token.Verbatim label content loc)) :: [] ->
-            reduceAux (AST.Verbatim label content loc) [] state |> debug1 "RULE 6"
+            reduceAux (AST.Verbatim label content loc) [] state |> debugYellow "RULE 6"
 
         _ ->
             state
@@ -185,7 +185,7 @@ recoverFromError state =
                     debug4 "recover, RULE 5" (state.stack |> Simplify.stack)
 
                 _ =
-                    debug1 "STACK in branch _ of RECOVER" (state.stack |> Simplify.stack)
+                    debugYellow "STACK in branch _ of RECOVER" (state.stack |> Simplify.stack)
             in
             Done
                 ({ state

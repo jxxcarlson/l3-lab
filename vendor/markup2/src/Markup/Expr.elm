@@ -47,7 +47,7 @@ parseToBlock lang id firstLine str =
 -}
 run : Lang -> String -> State
 run lang input =
-    loop (init input) (nextState lang) |> debug2 "FINAL STATE"
+    loop (init input) (nextState lang) |> debugMagenta "FINAL STATE"
 
 
 init : String -> State
@@ -96,7 +96,7 @@ nextState lang state_ =
 nextState_ : Lang -> State -> Step State State
 nextState_ lang state =
     if state.scanPointer >= state.end then
-        finalize lang (reduceFinal lang state |> debug1 "reduceFinal (APPL)")
+        finalize lang (reduceFinal lang state |> debugYellow "reduceFinal (APPL)")
 
     else
         processToken lang state
@@ -105,10 +105,10 @@ nextState_ lang state =
 finalize : Lang -> State -> Step State State
 finalize lang state =
     if state.stack == [] then
-        Done (state |> (\st -> { st | committed = List.reverse st.committed })) |> debug2 "ReduceFinal (1)"
+        Done (state |> (\st -> { st | committed = List.reverse st.committed })) |> debugMagenta "ReduceFinal (1)"
 
     else
-        recoverFromError lang state |> debug2 "ReduceFinal (2, recoverFromErrors)"
+        recoverFromError lang state |> debugMagenta "ReduceFinal (2, recoverFromErrors)"
 
 
 processToken : Lang -> State -> Step State State
