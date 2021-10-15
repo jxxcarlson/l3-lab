@@ -3,8 +3,8 @@ module Block.State exposing (Accumulator, State, init)
 import Block.Block exposing (SBlock)
 import Block.Line
 import Dict
-import Lang.Lang as Lang exposing (Lang)
-import Render.MathMacro
+import LaTeX.MathMacro
+import Lang.Lang exposing (Lang)
 
 
 
@@ -16,7 +16,6 @@ type alias State =
     , index : Int
     , lastIndex : Int
     , stack : List SBlock
-    , currentBlock : Maybe SBlock
     , currentLineData : Block.Line.LineData
     , previousLineData : Block.Line.LineData
     , committed : List SBlock
@@ -32,7 +31,7 @@ type alias State =
 
 
 type alias Accumulator =
-    { macroDict : Render.MathMacro.MathMacroDict }
+    { macroDict : LaTeX.MathMacro.MathMacroDict }
 
 
 
@@ -47,7 +46,6 @@ init lang generation input =
     , index = 0
     , currentLineData = { indent = 0, lineType = Block.Line.BlankLine, content = "" }
     , previousLineData = { indent = 0, lineType = Block.Line.BlankLine, content = "" }
-    , currentBlock = Nothing
     , indent = 0
     , verbatimBlockInitialIndent = 0
     , generation = generation

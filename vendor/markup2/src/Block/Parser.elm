@@ -1,10 +1,11 @@
 module Block.Parser exposing (run)
 
+import Block.Function as Function
 import Block.Library
 import Block.State exposing (State)
 import Lang.Lang exposing (Lang)
 import List.Extra
-import Markup.Debugger exposing (debug2, debug3)
+import Markup.Debugger exposing (debugCyan, debugRed, debugYellow)
 
 
 
@@ -14,7 +15,8 @@ import Markup.Debugger exposing (debug2, debug3)
 {-| -}
 run : Lang -> Int -> List String -> State
 run language generation input =
-    loop (Block.State.init language generation input |> debug3 "INITIAL STATE") (nextStep language)
+    loop (Block.State.init language generation input |> debugYellow "INITIAL STATE") (nextStep language)
+        |> (\state -> { state | committed = List.reverse state.committed })
 
 
 {-|
@@ -30,7 +32,7 @@ run language generation input =
 nextStep : Lang -> State -> Step State State
 nextStep lang state =
     if state.index >= state.lastIndex then
-        finalizeOrRecoverFromError state
+        finalizeOrRecoverFromError state |> debugRed "finalizeOrRecoverFromError"
 
     else
         Loop (state |> getLine lang |> Block.Library.processLine lang |> postProcess)
@@ -55,22 +57,24 @@ getLine language state =
                 (List.Extra.getAt state.index state.input
                     |> Maybe.withDefault "??"
                 )
-                |> debug2 ("LINE DATA " ++ String.fromInt state.index)
+                |> debugCyan ("LINE DATA " ++ String.fromInt state.index)
     }
 
 
 finalizeOrRecoverFromError : State -> Step State State
 finalizeOrRecoverFromError state =
-    state |> Block.Library.shiftCurrentBlock |> Block.Library.reduce |> finalizeOrRecoverFromError_
+    state |> Function.reduce |> finalizeOrRecoverFromError_
 
 
 finalizeOrRecoverFromError_ : State -> Step State State
 finalizeOrRecoverFromError_ state =
     if List.isEmpty state.stack then
-        Done (Block.Library.finalize state)
+        Done state
+        --else if stackIsReducible state.stack then
+        --    Loop (Block.Library.finalize state)
 
     else
-        Loop (Block.Library.recoverFromError state)
+        Loop (Function.recoverFromError state)
 
 
 

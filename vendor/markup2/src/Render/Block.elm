@@ -7,9 +7,9 @@ import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
-import Markup.Debugger exposing (debug1, debug3)
+import LaTeX.MathMacro
+import Markup.Debugger exposing (debugYellow)
 import Render.Math
-import Render.MathMacro
 import Render.Settings exposing (Settings)
 import Render.Text
 import Utility
@@ -26,10 +26,6 @@ render generation settings accumulator blocks =
 
 renderBlock : Int -> Settings -> Block.State.Accumulator -> Block -> Element msg
 renderBlock generation settings accumulator block =
-    let
-        _ =
-            debug1 "renderBlock, block status" (Block.getMeta block |> .status)
-    in
     case block of
         Paragraph textList _ ->
             paragraph
@@ -55,7 +51,8 @@ renderBlock generation settings accumulator block =
             else
                 case Dict.get name blockDict of
                     Nothing ->
-                        error ("Unimplemented block: " ++ name)
+                        -- error ("Unimplemented block: " ++ name)
+                        renderBlocksIncomplete name BlockUnimplemented blocks
 
                     Just f ->
                         f generation settings accumulator blocks
@@ -72,6 +69,8 @@ renderBlocksIncomplete name status blocks =
             , Font.monospace
             ]
         , Font.color codeColor
+        , Background.color (Element.rgb255 230 233 250)
+        , paddingXY 8 8
         , spacing 8
         ]
         (message name status
@@ -89,8 +88,11 @@ message name blockStatus =
         MismatchedTags first second ->
             Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Mismatched tags: " ++ first ++ " ≠ " ++ second)
 
-        BlockIncomplete str ->
+        BlockStarted ->
             Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unterminated block: " ++ name)
+
+        BlockUnimplemented ->
+            Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unimplemented block: " ++ name)
 
 
 renderLinesIncomplete : String -> BlockStatus -> List String -> Element msg
@@ -200,7 +202,7 @@ codeBlock generation settings accumulator textList =
 
 mathBlock : Int -> Settings -> Block.State.Accumulator -> List String -> Element msg
 mathBlock generation settings accumulator textList =
-    Render.Math.mathText generation Render.Math.DisplayMathMode (String.join "\n" textList |> Render.MathMacro.evalStr accumulator.macroDict)
+    Render.Math.mathText generation Render.Math.DisplayMathMode (String.join "\n" textList |> LaTeX.MathMacro.evalStr accumulator.macroDict)
 
 
 
@@ -212,7 +214,7 @@ prepareMathLines accumulator stringList =
     stringList
         |> List.filter (\line -> String.left 6 (String.trimLeft line) /= "\\label")
         |> String.join "\n"
-        |> Render.MathMacro.evalStr accumulator.macroDict
+        |> LaTeX.MathMacro.evalStr accumulator.macroDict
 
 
 equation : Int -> Settings -> Block.State.Accumulator -> List String -> Element msg
@@ -223,7 +225,7 @@ equation generation settings accumulator textList =
 
 aligned : Int -> Settings -> Block.State.Accumulator -> List String -> Element msg
 aligned generation settings accumulator textList =
-    Render.Math.mathText generation Render.Math.DisplayMathMode ("\\begin{aligned}\n" ++ (String.join "\n" textList |> Render.MathMacro.evalStr accumulator.macroDict) ++ "\n\\end{aligned}")
+    Render.Math.mathText generation Render.Math.DisplayMathMode ("\\begin{aligned}\n" ++ (String.join "\n" textList |> LaTeX.MathMacro.evalStr accumulator.macroDict) ++ "\n\\end{aligned}")
 
 
 quotationBlock : Int -> Settings -> Block.State.Accumulator -> List Block -> Element msg
@@ -231,7 +233,7 @@ quotationBlock generation settings accumulator blocks =
     column
         [ paddingEach { left = 18, right = 0, top = 0, bottom = 8 }
         ]
-        (List.map (renderBlock generation settings accumulator) (debug3 "XX, block in quotation" blocks))
+        (List.map (renderBlock generation settings accumulator) (debugYellow "XX, block in quotation" blocks))
 
 
 item : Int -> Settings -> Block.State.Accumulator -> List Block -> Element msg
