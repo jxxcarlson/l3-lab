@@ -70,29 +70,13 @@ renderBlocksIncomplete name status blocks =
             ]
         , Font.color codeColor
         , Background.color (Element.rgb255 230 233 250)
-        , paddingXY 8 8
         , spacing 8
+        , Element.paddingEach { left = 8, right = 8, top = 12, bottom = 18 }
         ]
         (message name status
             :: (Element.text <| Block.stringValueOfBlockList blocks)
             :: []
         )
-
-
-message : String -> BlockStatus -> Element msg
-message name blockStatus =
-    case blockStatus of
-        BlockComplete ->
-            Element.none
-
-        MismatchedTags first second ->
-            Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Mismatched tags: " ++ first ++ " ≠ " ++ second)
-
-        BlockStarted ->
-            Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unfinished " ++ name ++ " block")
-
-        BlockUnimplemented ->
-            Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unimplemented block: " ++ name)
 
 
 renderLinesIncomplete : String -> BlockStatus -> List String -> Element msg
@@ -105,8 +89,25 @@ renderLinesIncomplete name status lines =
         , Font.color (Element.rgb 0 0 200)
         , Background.color (Element.rgb255 230 233 250)
         , spacing 8
+        , Element.paddingEach { left = 8, right = 8, top = 12, bottom = 18 }
         ]
         (message name status :: List.map (\t -> el [] (text t)) lines)
+
+
+message : String -> BlockStatus -> Element msg
+message name blockStatus =
+    case blockStatus of
+        BlockComplete ->
+            Element.none
+
+        MismatchedTags first second ->
+            Element.el [ Font.color (Element.rgb 150 0 0) ] (Element.text <| "Mismatched tags: " ++ first ++ " ≠ " ++ second)
+
+        BlockStarted ->
+            Element.el [ Font.color (Element.rgb 150 0 0) ] (Element.text <| "Unfinished " ++ name ++ " block")
+
+        BlockUnimplemented ->
+            Element.el [ Font.color (Element.rgb 150 0 0) ] (Element.text <| "Unimplemented block: " ++ name)
 
 
 error str =
