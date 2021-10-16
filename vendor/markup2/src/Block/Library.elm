@@ -35,7 +35,7 @@ processLine language state =
         BeginBlock _ _ ->
             state
                 |> debugIn "BeginBlock"
-                |> createBlock
+                |> Function.pushBlockOnState
                 |> debugOut "BeginBlock (OUT)"
 
         BeginVerbatimBlock mark ->
@@ -47,7 +47,7 @@ processLine language state =
                 state |> endBlock mark
 
              else
-                createBlock state
+                Function.pushBlockOnState state
             )
                 |> debugOut "BeginVerbatimBlock (OUT)"
 
@@ -170,7 +170,7 @@ processLine language state =
                             -- top of the stack and create a new block.
                             state
                                 |> commitBlock
-                                |> createBlock
+                                |> Function.pushBlockOnState
             )
                 |> debugOut "VerbatimLine (OUT)"
 
@@ -211,7 +211,12 @@ processLine language state =
                                 commitBlock state |> debugYellow "BlankLine 3"
 
                             Just _ ->
-                                if state.lang == MiniLaTeX then
+                                if Function.nameOfStackTop state == Just "math" then
+                                    state
+                                        |> Function.simpleCommit
+                                        |> debugYellow "BlankLine 4B"
+
+                                else if state.lang == MiniLaTeX then
                                     state
                                         |> Function.finalizeBlockStatusOfStackTop
                                         |> Function.simpleCommit
@@ -276,89 +281,6 @@ getLineTypeParser language =
 
 
 -- CREATE BLOCK
-
-
-createBlock : State -> State
-createBlock state =
-    -- The phase 1 function is necessary. Test (7, 8) in  BlockParserTests2 will fails
-    -- otherwise with out-of-order output
-    state |> createBlockPhase1 |> createBlockPhase2
-
-
-createBlockPhase1 : State -> State
-createBlockPhase1 state =
-    -- Determine whether we need to reduce the stack, pushing something onto committed
-    case compare (Function.level state.currentLineData.indent) (Function.levelOfCurrentBlock state) of
-        LT ->
-            case Function.stackTop state of
-                Nothing ->
-                    state
-
-                Just _ ->
-                    commitBlock state |> debugRed "TROUBLE HERE? (2)"
-
-        EQ ->
-            case Function.stackTop state of
-                Nothing ->
-                    commitBlock state
-
-                Just _ ->
-                    state |> Function.finalizeBlockStatusOfStackTop |> Function.simpleCommit |> debugRed "TROUBLE HERE? (3)"
-
-        GT ->
-            state
-
-
-createBlockPhase2 : State -> State
-createBlockPhase2 state =
-    -- create a new block.  This function is straigthforward.  Given the data on
-    -- hand, create  new block and push it onto the stack.
-    (case state.currentLineData.lineType of
-        OrdinaryLine ->
-            Function.pushBlock (SParagraph [ state.currentLineData.content ] (newMeta state)) state
-
-        BeginBlock RejectFirstLine mark ->
-            let
-                newBlock =
-                    SBlock mark [] (newMeta state)
-            in
-            Function.pushBlock newBlock state
-
-        BeginBlock AcceptFirstLine _ ->
-            let
-                newBlock =
-                    SBlock (nibble state.currentLineData.content |> transformMarkdownHeading)
-                        [ SParagraph [ deleteSpaceDelimitedPrefix state.currentLineData.content ] (newMeta state) ]
-                        (newMeta state)
-            in
-            Function.pushBlock newBlock state
-
-        BeginBlock AcceptNibbledFirstLine kind ->
-            let
-                newBlock =
-                    SBlock kind
-                        [ SParagraph [ deleteSpaceDelimitedPrefix state.currentLineData.content ] (newMeta state) ]
-                        (newMeta state)
-            in
-            Function.pushBlock newBlock state
-
-        BeginVerbatimBlock mark ->
-            let
-                newBlock =
-                    SVerbatimBlock mark [] (newMeta state)
-            in
-            { state
-                | currentLineData = Function.incrementLevel state.currentLineData -- do this because a block expects subsequent lines to be indented
-                , inVerbatimBlock = True
-                , verbatimBlockInitialIndent = state.currentLineData.indent + Function.quantumOfIndentation -- account for indentation of succeeding lines
-                , blockCount = state.blockCount + 1
-            }
-                |> Function.pushBlock newBlock
-
-        _ ->
-            state
-    )
-        |> debugCyan "createBlock "
 
 
 newMeta state =
@@ -530,36 +452,6 @@ updateAccumulatorWithBlock sblock1 accumulator =
 
 
 
--- AST TRANSFORMATIONS
-
-
-{-| transformHeading is used for Markdown so that we can have a single, simple AST
-for all markup languages handled by the system -
--}
-transformMarkdownHeading : String -> String
-transformMarkdownHeading str =
-    case str of
-        "#" ->
-            "title"
-
-        "##" ->
-            "heading2"
-
-        "###" ->
-            "heading3"
-
-        "####" ->
-            "heading4"
-
-        "#####" ->
-            "heading5"
-
-        _ ->
-            str
-
-
-
--- ERROR HANDLING
 -- HELPERS
 
 
