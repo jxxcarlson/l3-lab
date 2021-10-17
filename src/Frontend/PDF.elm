@@ -1,13 +1,10 @@
 module Frontend.PDF exposing (gotLink, print)
 
---import L1.Parser.AST as AST
---import L1.Parser.Document
---import L1.Render.LaTeX
+import LaTeX.Export.API
 
 import Document exposing (Document)
 import Http
 import Json.Encode as E
-import Markup.API
 import Process
 import Task
 import Types exposing (FrontendModel, FrontendMsg(..), PrintingState(..), ToBackend(..))
