@@ -25,7 +25,7 @@ import User
 import Util
 import View.Main
 import View.Utility
-
+import LaTeX.Export.API
 
 type alias Model =
     FrontendModel
@@ -269,9 +269,7 @@ update msg model =
         ExportToLaTeX ->
             let
                 laTeXText =
-                    -- TODO:implement this
-                    -- L1.Render.LaTeX.transformDocument model.currentDocument.content
-                    "Not implemented"
+                    LaTeX.Export.API.export model.language model.currentDocument.content
 
                 fileName =
                     model.currentDocument.title |> String.replace " " "-" |> String.toLower |> (\name -> name ++ ".tex")
