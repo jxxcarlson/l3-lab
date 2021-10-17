@@ -210,7 +210,7 @@ update msg model =
                     Markup.API.parse document.language model.counter (String.lines document.content)
 
                 newTitle =
-                    Markup.API.getTitle parseData.ast |> Maybe.withDefault "Untitled" |> Debug.log "XXX, NEW TITLE"
+                    Markup.API.getTitle parseData.ast |> Maybe.withDefault "Untitled"
 
                 newSlug =
                     Maybe.map (Document.changeSlug newTitle) document.slug |> Maybe.withDefault "SLUG"
