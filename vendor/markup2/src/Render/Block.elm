@@ -204,11 +204,11 @@ codeBlock generation settings accumulator textList =
 
 mathBlock : Int -> Settings -> Block.State.Accumulator -> List String -> Element msg
 mathBlock generation settings accumulator textList =
+    let
+        _ =
+            String.join "\n" textList |> LaTeX.MathMacro.evalStr accumulator.macroDict |> Debug.log "XXTEX"
+    in
     Render.Math.mathText generation Render.Math.DisplayMathMode (String.join "\n" textList |> LaTeX.MathMacro.evalStr accumulator.macroDict)
-
-
-
--- Internal.MathMacro.evalStr latexState.mathMacroDictionary str
 
 
 prepareMathLines : Block.State.Accumulator -> List String -> String

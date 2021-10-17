@@ -1,62 +1,66 @@
-module Block.TestStuff exposing (l1, m1, t1, t2, t3, t4, t5, t6)
+module Block.TestStuff exposing (..)
+
+import Block.Parser
+import Lang.Lang exposing (Lang(..))
+import Markup.API
+import Markup.Simplify exposing (BlockS(..), ExprS(..))
 
 
-l1 =
-    "| foo\n   a\n   b\n   | bar\n      c\n      d"
+m2 =
+    """
+## Code
+"""
 
 
 m1 =
-    "\\begin{code}\n   abc\n   def\n\\end{code}\n\nyada\nnada\n\n\\begin{math}\n   xyz\n\\end{math}"
-
-
-t1 =
     """
-one two three
-four five six
-"""
+## Code
 
+```
+   a[1] = 1
+   b[1] = 1
 
-t2 =
-    """
+   c[i] = 2
+   d[i] = c[i] + 1
+```
+
+## Quotation
+
+This is a quote:
+
 > Regular languages are rather inexpressive,
    but they work great for lexers. On the opposite 
    side of expressivity spectrum are Turing machines. 
+   For them, we also have a number of meta-languages 
+   (like Rust), which work great for humans.
+    It’s interesting that a Turing machine is 
+    equivalent to a finite state machine with 
+    a pair of stacks: to get two stacks from a tape, 
+    cut the tape in half where the head is. Moving 
+    the head then corresponds to popping from one 
+    stack and pushing to another.
 """
 
 
-t3 =
-    """
-one two three
-four five six
-    
-> Regular languages are rather inexpressive,
-   but they work great for lexers. On the opposite 
-   side of expressivity spectrum are Turing machines. 
-"""
+ami str =
+    Markup.API.p MiniLaTeX str
 
 
-t4 =
-    """1
-
-2
-"""
+ama str =
+    Markup.API.p Markdown str
 
 
-t5 =
-    """
-1
-2
-    
->  3
-   4
-   5 
-"""
+al str =
+    Markup.API.p L1 str
 
 
-t6 =
-    """abc def
-ghi jkl
+ma str =
+    Block.Parser.run Markdown 0 (String.lines str) |> .committed |> List.map Markup.Simplify.sblock
 
-one two three
-four five six
-"""
+
+mi str =
+    Block.Parser.run MiniLaTeX 0 (String.lines str) |> .committed |> List.map Markup.Simplify.sblock
+
+
+ll str =
+    Block.Parser.run L1 0 (String.lines str) |> .committed |> List.map Markup.Simplify.sblock
