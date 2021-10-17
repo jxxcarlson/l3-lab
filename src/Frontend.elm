@@ -12,6 +12,7 @@ import Frontend.Cmd
 import Frontend.PDF as PDF
 import Frontend.Update
 import Html exposing (Html)
+import LaTeX.Export.API
 import Lamdera exposing (sendToBackend)
 import Lang.Lang
 import List.Extra
@@ -25,7 +26,7 @@ import User
 import Util
 import View.Main
 import View.Utility
-import LaTeX.Export.API
+
 
 type alias Model =
     FrontendModel
@@ -206,10 +207,10 @@ update msg model =
                     model.currentDocument
 
                 parseData =
-                    Markup.API.parse document.language 0 (String.lines document.content)
+                    Markup.API.parse document.language model.counter (String.lines document.content)
 
                 newTitle =
-                    Markup.API.getTitle parseData.ast |> Maybe.withDefault "Untitled"
+                    Markup.API.getTitle parseData.ast |> Maybe.withDefault "Untitled" |> Debug.log "XXX, NEW TITLE"
 
                 newSlug =
                     Maybe.map (Document.changeSlug newTitle) document.slug |> Maybe.withDefault "SLUG"
