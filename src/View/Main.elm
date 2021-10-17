@@ -59,7 +59,7 @@ footer model =
         , View.Utility.showIfIsAdmin model Button.runTask
 
         --, Button.export
-        , Button.exportToMarkown
+        -- , Button.exportToMarkown
         , Button.exportToLaTeX
         , Button.printToPDF model
 
