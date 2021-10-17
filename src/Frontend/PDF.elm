@@ -1,10 +1,9 @@
 module Frontend.PDF exposing (gotLink, print)
 
-import LaTeX.Export.API
-
 import Document exposing (Document)
 import Http
 import Json.Encode as E
+import LaTeX.Export.API
 import Process
 import Task
 import Types exposing (FrontendModel, FrontendMsg(..), PrintingState(..), ToBackend(..))
@@ -23,7 +22,7 @@ generatePdf : Document -> Cmd FrontendMsg
 generatePdf document =
     let
         data =
-            LaTeX.Export.API.parepareForExportWithImages document.language document.content
+            LaTeX.Export.API.prepareForExportWithImages document.language document.content
     in
     Http.request
         { method = "POST"
