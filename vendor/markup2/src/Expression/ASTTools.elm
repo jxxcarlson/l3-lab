@@ -68,6 +68,9 @@ getText text =
         VerbatimM _ str _ ->
             Just (String.replace "`" "" str)
 
+        ExprM _ expressions _ ->
+            List.map getText expressions |> Maybe.Extra.values |> String.join " " |> Just
+
         _ ->
             Nothing
 
@@ -138,8 +141,8 @@ filter_ filterType key block =
             case filterType of
                 Equality ->
                     List.filter (\t -> Maybe.map (\x -> x == key) (getName t) == Just True) textList
-                        ++ List.filter (\t -> Maybe.map (\x -> x == "special") (getName t) == Just True) textList
 
+                -- ++ List.filter (\t -> Maybe.map (\x -> x == "special") (getName t) == Just True) textList
                 Contains ->
                     List.filter (\t -> Maybe.map (String.contains key) (getName t) == Just True) textList
 

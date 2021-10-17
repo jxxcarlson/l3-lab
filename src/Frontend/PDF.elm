@@ -22,14 +22,14 @@ print model =
 generatePdf : Document -> Cmd FrontendMsg
 generatePdf document =
     let
-        ( imageUrls, contentForExport ) =
-            Markup.API.prepareForExport document.content
+        data =
+            LaTeX.Export.API.parepareForExportWithImages document.language document.content
     in
     Http.request
         { method = "POST"
         , headers = [ Http.header "Content-Type" "application/json" ]
         , url = "https://pdfserv.app/pdf"
-        , body = Http.jsonBody (encodeForPDF document.id "-" contentForExport imageUrls)
+        , body = Http.jsonBody (encodeForPDF document.id "-" data.source data.imageUrls)
         , expect = Http.expectString GotPdfLink
         , timeout = Nothing
         , tracker = Nothing
