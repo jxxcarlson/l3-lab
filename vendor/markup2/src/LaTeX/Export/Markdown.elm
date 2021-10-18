@@ -6,7 +6,7 @@ import Markup.Meta
 
 normalize : List Block -> List Block
 normalize blocks =
-    loop (init blocks) nextStep
+    loop (init blocks) nextStep |> List.reverse
 
 
 type alias State =
@@ -46,10 +46,11 @@ nextState block state =
     case state.status of
         OutsideList ->
             case block of
-                Block "item" _ _ ->
+                Paragraph [ ExprM "item" _ _ ] _ ->
                     { state
                         | input = List.drop 1 state.input
                         , status = InsideList
+                        , stack = block :: state.stack
                     }
 
                 _ ->
@@ -60,14 +61,10 @@ nextState block state =
 
         InsideList ->
             case block of
-                Block "item" [ Paragraph contents meta1 ] meta2 ->
-                    let
-                        newBlock =
-                            Paragraph [ ExprM "item" contents Markup.Meta.dummy ] meta2
-                    in
+                Paragraph [ ExprM "item" _ _ ] _ ->
                     { state
                         | input = List.drop 1 state.input
-                        , stack = newBlock :: state.stack
+                        , stack = block :: state.stack
                     }
 
                 _ ->
