@@ -1,12 +1,13 @@
 module Render.Block exposing (render)
 
-import Block.Block exposing (Block(..), BlockStatus(..))
+import Block.Block as Block exposing (Block(..), BlockStatus(..))
 import Block.BlockTools as Block
 import Block.State
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
+import Expression.AST
 import LaTeX.MathMacro
 import Markup.Debugger exposing (debugYellow)
 import Render.Math
@@ -246,18 +247,34 @@ listSpacing =
 
 itemize : Int -> Settings -> Block.State.Accumulator -> List Block -> Element msg
 itemize generation settings accumulator blocks =
+    let
+        _ =
+            debugYellow "XXX, ENTERNG itemize" (List.length blocks)
+    in
     column [ spacing listSpacing ]
         (List.map (item_ generation settings accumulator) blocks)
 
 
 item_ : Int -> Settings -> Block.State.Accumulator -> Block -> Element msg
 item_ generation settings accumulator block =
+    let
+        blocks =
+            case block of
+                Block "item" blocks_ _ ->
+                    blocks_
+
+                Paragraph [ Block.ExprM "item" expressions _ ] meta ->
+                    [ Paragraph expressions meta ]
+
+                _ ->
+                    []
+    in
     row [ width fill, paddingEach { left = 18, right = 0, top = 0, bottom = 0 } ]
         [ el [ height fill ] none
         , column [ width fill ]
             [ row [ width fill, spacing listSpacing ]
                 [ itemSymbol
-                , el [ width fill ] (renderBlock generation settings accumulator block)
+                , paragraph [ width fill ] (List.map (renderBlock generation settings accumulator) blocks)
                 ]
             ]
         ]
@@ -265,18 +282,41 @@ item_ generation settings accumulator block =
 
 enumerate : Int -> Settings -> Block.State.Accumulator -> List Block -> Element msg
 enumerate generation settings accumulator blocks =
+    let
+        _ =
+            debugYellow "XXX, ENTERNG ENUMERATE" (List.length blocks)
+    in
     column [ spacing listSpacing ]
         (List.indexedMap (\k -> numberedItem_ k generation settings accumulator) blocks)
 
 
 numberedItem_ : Int -> Int -> Settings -> Block.State.Accumulator -> Block -> Element msg
 numberedItem_ index generation settings accumulator block =
+    let
+        -- TODO: simplify the below, eliminating the cae 'numberedItem' by takking care of these in putListItemsAsChildrenOfBlock
+        blocks =
+            case block of
+                Block "item" blocks_ _ ->
+                    blocks_
+
+                Block "numberedItem" blocks_ _ ->
+                    blocks_
+
+                Paragraph [ Block.ExprM "item" expressions _ ] meta ->
+                    [ Paragraph expressions meta ]
+
+                Paragraph [ Block.ExprM "numberedItem" expressions _ ] meta ->
+                    [ Paragraph expressions meta ]
+
+                _ ->
+                    []
+    in
     row [ width fill, paddingEach { left = 18, right = 0, top = 0, bottom = 0 } ]
         [ el [ height fill ] none
         , column [ width fill ]
             [ row [ width fill, spacing listSpacing ]
                 [ numberedItemSymbol index
-                , el [ width fill ] (renderBlock generation settings accumulator block)
+                , paragraph [ width fill ] (List.map (renderBlock generation settings accumulator) blocks)
                 ]
             ]
         ]
