@@ -22,6 +22,23 @@ m2 =
 """
 
 
+t1 =
+    "\\begin{itemize}\n   \n   \\item Apples\n   \n   \\item Oranges\n   \n\\end{itemize}"
+
+
+t2 =
+    "\\begin{enumerate}\n   \n   \\item Apples\n   \n   \\item Oranges\n   \n\\end{enumerate}"
+
+
+mi3 =
+    """
+\\begin{item}
+   foo
+   bar
+\\end{item}
+"""
+
+
 ami str =
     Markup.API.p MiniLaTeX str
 

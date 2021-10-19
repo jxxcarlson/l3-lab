@@ -25,13 +25,16 @@ module Block.Function exposing
     , quantumOfIndentation
     , recoverFromError
     , reduce
+    , reduceStackIfTopAndBottomMatch
     , renderErrorMessage
     , reverseCommitted
     , reverseContents
     , setBlockStatus
+    , setStackBottomLevelAndName
     , shiftBlock
     , simpleCommit
     , stackTop
+    , transformLaTeXBlockInState
     )
 
 import Block.Block as Block exposing (Block(..), BlockStatus(..), ExprM(..), SBlock(..))
@@ -40,7 +43,7 @@ import Block.Line exposing (BlockOption(..), LineData, LineType(..))
 import Block.State exposing (State)
 import Expression.Token exposing (Token(..))
 import Lang.Lang exposing (Lang(..))
-import Markup.Debugger exposing (debugBlue, debugMagenta)
+import Markup.Debugger exposing (..)
 import Markup.Meta
 import Markup.ParserTools
 import Markup.Simplify as Simplify
@@ -66,7 +69,7 @@ makeBlock state =
         BeginBlock RejectFirstLine mark ->
             SBlock mark [] (newMeta state) |> Just
 
-        BeginBlock AcceptFirstLine _ ->
+        BeginBlock AcceptFirstLine kind ->
             SBlock (nibble state.currentLineData.content |> transformMarkdownHeading)
                 [ SParagraph [ deleteSpaceDelimitedPrefix state.currentLineData.content ] (newMeta state) ]
                 (newMeta state)
@@ -77,6 +80,7 @@ makeBlock state =
                 [ SParagraph [ deleteSpaceDelimitedPrefix state.currentLineData.content ] (newMeta state) ]
                 (newMeta state)
                 |> Just
+                |> debugRed "makBlock, AcceptNibbledFirstLine"
 
         BeginVerbatimBlock mark ->
             SVerbatimBlock mark [] (newMeta state) |> Just
@@ -131,12 +135,32 @@ newMeta state =
 
 deleteSpaceDelimitedPrefix : String -> String
 deleteSpaceDelimitedPrefix str =
-    String.replace (nibble str ++ " ") "" str
+    str
+        |> String.trimLeft
+        |> (\s -> String.replace (nibble s ++ " ") "" s)
 
 
 postErrorMessage : String -> String -> State -> State
 postErrorMessage red blue state =
     { state | errorMessage = Just { red = red, blue = blue } }
+
+
+reduceStackIfTopAndBottomMatch : Int -> String -> State -> State
+reduceStackIfTopAndBottomMatch level_ name state =
+    if level_ == state.stackBottomLevel && name == state.stackBottomName then
+        reduce state
+
+    else
+        state
+
+
+setStackBottomLevelAndName : Int -> String -> State -> State
+setStackBottomLevelAndName level_ name state =
+    if List.isEmpty state.stack then
+        { state | stackBottomLevel = level_, stackBottomName = name }
+
+    else
+        state
 
 
 liftBlockFunctiontoStateFunction : (SBlock -> SBlock) -> State -> State
@@ -152,6 +176,30 @@ mapStack f stack =
 
         Just top ->
             f top :: List.drop 1 stack
+
+
+transformLaTeXBlockInState : State -> State
+transformLaTeXBlockInState state =
+    liftBlockFunctiontoStateFunction transformLaTeXBlock state
+
+
+transformLaTeXBlock : SBlock -> SBlock
+transformLaTeXBlock block =
+    case block of
+        SParagraph textList loc ->
+            case textList of
+                [] ->
+                    block
+
+                head :: rest ->
+                    if String.left 5 (String.trimLeft head) == "\\item" then
+                        SBlock "item" [ SParagraph (String.dropLeft 5 (String.trimLeft head) :: rest) loc ] loc
+
+                    else
+                        block
+
+        _ ->
+            block
 
 
 fixMarkdownBlock : Block -> Block
@@ -249,6 +297,51 @@ recoverFromError state =
     { state | stack = [] } |> debugBlue "recoverFromError "
 
 
+compress : List SBlock -> List SBlock
+compress blocks =
+    case getBlocksOfTheSameLevel blocks of
+        ( [], rest ) ->
+            rest
+
+        ( same, [] ) ->
+            same
+
+        ( same, top :: rest ) ->
+            case top of
+                SBlock name blocks_ meta ->
+                    SBlock name (same ++ blocks_) meta :: rest
+
+                _ ->
+                    blocks
+
+
+getBlocksOfTheSameLevel : List SBlock -> ( List SBlock, List SBlock )
+getBlocksOfTheSameLevel blocks =
+    getBlocksOfTheSameLevelHelper ( [], blocks )
+
+
+getBlocksOfTheSameLevelHelper : ( List SBlock, List SBlock ) -> ( List SBlock, List SBlock )
+getBlocksOfTheSameLevelHelper data =
+    (case data of
+        ( [], [] ) ->
+            ( [], [] )
+
+        ( first, [] ) ->
+            ( first, [] )
+
+        ( [], x :: rest ) ->
+            ( [ x ], rest )
+
+        ( block1 :: same, block2 :: rest ) ->
+            if levelOfBlock block1 == levelOfBlock block2 then
+                getBlocksOfTheSameLevelHelper ( block2 :: block1 :: same, rest )
+
+            else
+                data
+    )
+        |> debugSpecial "getBlocksOfTheSameLevelHelper"
+
+
 reduce : State -> State
 reduce state =
     let
@@ -272,8 +365,10 @@ reduce state =
                         debugBlue "reduce" 1
                 in
                 -- TODO: is this correct?
-                reduce { state | committed = finalize_ block1 :: finalize_ block2 :: state.committed, stack = List.drop 2 state.stack } |> debugOut "REDUCE 1, OUT"
+                -- reduce { state | committed = finalize_ block1 :: finalize_ block2 :: state.committed, stack = List.drop 2 state.stack } |> debugOut "REDUCE 1, OUT"
+                state |> (\state_ -> { state_ | stack = compress state_.stack }) |> debugOut "COMPRESS IN REDUCE"
 
+        -- state |> compress (block1 :: block2 :: []) rest |> reduce |> debugOut "REDUCE 1, OUT"
         block :: [] ->
             let
                 _ =
@@ -527,3 +622,14 @@ debugOut label state =
             debugMagenta (debugPrefix label state) (state.committed |> List.map Simplify.sblock)
     in
     state
+
+
+debugSpecial label ( firstBlocks, otherBlocks ) =
+    let
+        _ =
+            debugMagenta (label ++ ", first") (firstBlocks |> List.map Simplify.sblock)
+
+        _ =
+            debugMagenta (label ++ ", seconds") (otherBlocks |> List.map Simplify.sblock)
+    in
+    ( firstBlocks, otherBlocks )
