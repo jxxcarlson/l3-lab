@@ -306,7 +306,7 @@ viewRendered model =
 
 
 settings =
-    { width = 500, titleSize = 30, showTOC = True }
+    { width = 500, titleSize = 30, showTOC = True, showErrorMessages = False }
 
 
 
