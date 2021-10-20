@@ -48,7 +48,7 @@ newDocument model =
                                 "[title New Document]"
 
                             Lang.Lang.Markdown ->
-                                "# New Document"
+                                "[! title](New Document)"
 
                             Lang.Lang.MiniLaTeX ->
                                 "\\title{New Document}"
