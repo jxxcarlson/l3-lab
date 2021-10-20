@@ -305,8 +305,14 @@ viewRendered model =
         ]
 
 
+settings : Markup.API.Settings
 settings =
-    { width = 500, titleSize = 30, showTOC = True, showErrorMessages = False }
+    { width = 500
+    , titleSize = 30
+    , showTOC = True
+    , showErrorMessages = False
+    , paragraphSpacing = 14
+    }
 
 
 
