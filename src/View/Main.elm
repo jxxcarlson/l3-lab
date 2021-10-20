@@ -310,7 +310,7 @@ settings =
     { width = 500
     , titleSize = 30
     , showTOC = True
-    , showErrorMessages = False
+    , showErrorMessages = True
     , paragraphSpacing = 14
     }
 
