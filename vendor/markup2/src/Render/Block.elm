@@ -14,6 +14,7 @@ import Markup.Debugger exposing (debugYellow)
 import Render.Math
 import Render.Settings exposing (Settings)
 import Render.Text
+import String.Extra
 import Utility
 
 
@@ -50,6 +51,9 @@ renderBlock generation settings accumulator block =
             if meta.status /= BlockComplete then
                 renderBlocksIncomplete settings name meta.status blocks
 
+            else if List.member name [ "theorem", "colloary", "definition", "lemma", "proposition" ] then
+                renderTheoremLikeBlock generation settings accumulator name blocks
+
             else
                 case Dict.get name blockDict of
                     Nothing ->
@@ -65,39 +69,43 @@ renderBlock generation settings accumulator block =
 
 renderLinesIncomplete : Settings -> String -> BlockStatus -> List String -> Element msg
 renderLinesIncomplete settings name status lines =
-    column
-        [ Font.family
-            [ Font.typeface "Inconsolata"
-            , Font.monospace
+    column [ paddingEach { left = 20, right = 0, top = 0, bottom = 0 } ]
+        [ column
+            [ Font.family
+                [ Font.typeface "Inconsolata"
+                , Font.monospace
+                ]
+            , Font.color (Element.rgb 0 0 200)
+            , Border.solid
+            , Border.width 1
+            , errorBackgroundColor settings
+            , paddingXY 8 8
+            , spacing 8
             ]
-        , Font.color (Element.rgb 0 0 200)
-        , Border.solid
-        , Border.width 1
-        , errorBackgroundColor settings
-        , paddingXY 8 8
-        , spacing 8
+            (message settings.showErrorMessages name status :: List.map (\t -> el [] (text t)) lines)
         ]
-        (message settings.showErrorMessages name status :: List.map (\t -> el [] (text t)) lines)
 
 
 renderBlocksIncomplete : Settings -> String -> BlockStatus -> List Block -> Element msg
 renderBlocksIncomplete settings name status blocks =
-    column
-        [ Font.family
-            [ Font.typeface "Inconsolata"
-            , Font.monospace
+    column [ paddingEach { left = 20, right = 0, top = 0, bottom = 0 } ]
+        [ column
+            [ Font.family
+                [ Font.typeface "Inconsolata"
+                , Font.monospace
+                ]
+            , Font.color codeColor
+            , Border.solid
+            , Border.width 1
+            , errorBackgroundColor settings
+            , paddingXY 8 8
+            , spacing 8
             ]
-        , Font.color codeColor
-        , Border.solid
-        , Border.width 1
-        , errorBackgroundColor settings
-        , paddingXY 8 8
-        , spacing 8
+            (message settings.showErrorMessages name status
+                :: (Element.text <| Block.stringValueOfBlockList blocks)
+                :: []
+            )
         ]
-        (message settings.showErrorMessages name status
-            :: (Element.text <| Block.stringValueOfBlockList blocks)
-            :: []
-        )
 
 
 errorBackgroundColor settings =
@@ -116,13 +124,13 @@ message show name blockStatus =
                 Element.none
 
             MismatchedTags first second ->
-                Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Mismatched tags: " ++ first ++ " ≠ " ++ second)
+                Element.el [ Font.color (Element.rgb 0 0 180) ] (Element.text <| "Mismatched tags: " ++ first ++ " ≠ " ++ second)
 
             BlockStarted ->
-                Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unfinished " ++ name ++ " block")
+                Element.el [ Font.color (Element.rgb 0 0 180) ] (Element.text <| "Unfinished " ++ name ++ " block")
 
             BlockUnimplemented ->
-                Element.el [ Font.color (Element.rgb 180 0 0) ] (Element.text <| "Unimplemented block: " ++ name)
+                Element.el [ Font.color (Element.rgb 0 0 180) ] (Element.text <| "Unimplemented block: " ++ name)
 
     else
         Element.none
@@ -255,6 +263,17 @@ quotationBlock generation settings accumulator blocks =
         [ paddingEach { left = 18, right = 0, top = 0, bottom = 8 }
         ]
         (List.map (renderBlock generation settings accumulator) (debugYellow "XX, block in quotation" blocks))
+
+
+renderTheoremLikeBlock : Int -> Settings -> Block.State.Accumulator -> String -> List Block -> Element msg
+renderTheoremLikeBlock generation settings accumulator name blocks =
+    column [ Element.spacing 8 ]
+        [ row [ Font.bold ] [ Element.text (String.Extra.toTitleCase name) ]
+        , column
+            [ paddingEach { left = 18, right = 0, top = 0, bottom = 8 }
+            ]
+            (List.map (renderBlock generation settings accumulator) (debugYellow "XX, block in quotation" blocks))
+        ]
 
 
 listSpacing =

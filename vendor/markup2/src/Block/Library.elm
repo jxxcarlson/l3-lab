@@ -17,6 +17,7 @@ import Markup.Debugger exposing (debug3, debugBlue, debugCyan, debugMagenta, deb
 import Markup.ParserTools
 import Markup.Simplify as Simplify
 import Parser.Advanced
+import Utility
 
 
 {-|
@@ -74,6 +75,9 @@ processLine language state =
             if state.inVerbatimBlock && state.currentLineData.indent <= state.verbatimBlockInitialIndent then
                 handleUnterminatedVerbatimBlock state
 
+            else if state.currentLineData.indent <= state.verbatimBlockInitialIndent then
+                state
+
             else
                 state |> resetInVerbatimBlock |> handleOrdinaryLine
 
@@ -107,30 +111,32 @@ processLine language state =
 -- ORDINARY LINE
 
 
-handleUnterminatedVerbatimBlock state =
+handleUnterminatedBlock state =
+    let
+        _ =
+            debugRed "handleUnterminatedBlock, currentLine" state.currentLineData.content
+    in
     state
+        |> Utility.ifApply (state.currentLineData.content == "$") (Function.postErrorMessage "" "Another dollar sign at end?")
+        |> Function.insertErrorMessage
         |> handleVerbatimLine
-        |> Function.postErrorMessage
-            ""
-            "Indentation?"
+        |> Utility.ifApply (state.currentLineData.content /= "$") (Function.postErrorMessage "" "Indentation?")
         |> Function.insertErrorMessage
         |> simpleCommit
 
 
-resetInVerbatimBlock2 state =
-    if state.currentLineData.indent <= state.verbatimBlockInitialIndent then
-        if state.inVerbatimBlock then
-            { state
-                | errorMessage = Just { red = "Did you forget to indent this  line", blue = state.currentLineData.content }
-                , inVerbatimBlock = False
-            }
-                |> Function.insertErrorMessage
-
-        else
-            { state | inVerbatimBlock = False }
-
-    else
-        state
+handleUnterminatedVerbatimBlock state =
+    let
+        _ =
+            debugRed "handleUnterminatedVerbatimBlock, currentLine" state.currentLineData.content
+    in
+    state
+        |> Utility.ifApply (state.currentLineData.content == "$") (Function.postErrorMessage "" "Another dollar sign at end?")
+        |> Function.insertErrorMessage
+        |> handleVerbatimLine
+        |> Utility.ifApply (state.currentLineData.content /= "$") (Function.postErrorMessage "" "Indentation?")
+        |> Function.insertErrorMessage
+        |> simpleCommit
 
 
 resetInVerbatimBlock state =
