@@ -17,7 +17,7 @@ import Markup.Debugger exposing (debug3, debugBlue, debugCyan, debugMagenta, deb
 import Markup.ParserTools
 import Markup.Simplify as Simplify
 import Parser.Advanced
-import Utility
+import Utility exposing (ifApply)
 
 
 {-|
@@ -37,7 +37,7 @@ processLine language state =
             { state | inVerbatimBlock = False }
                 |> Function.setStackBottomLevelAndName state.currentLineData.indent name
                 |> debugIn "BeginBlock"
-                |> Function.pushBlockOnState
+                |> Function.makeBlockWithCurrentLine
                 |> debugOut "BeginBlock (OUT)"
 
         BeginVerbatimBlock name ->
@@ -49,7 +49,7 @@ processLine language state =
                 { state | inVerbatimBlock = True } |> endBlock name
 
              else
-                { state | inVerbatimBlock = True } |> Function.setStackBottomLevelAndName state.currentLineData.indent name |> Function.pushBlockOnState
+                { state | inVerbatimBlock = True } |> Function.setStackBottomLevelAndName state.currentLineData.indent name |> Function.makeBlockWithCurrentLine
             )
                 |> debugOut "BeginVerbatimBlock (OUT)"
 
@@ -97,13 +97,10 @@ processLine language state =
         BlankLine ->
             let
                 _ =
-                    debugYellow "BlankLine" 666
-
-                _ =
-                    debugIn "BlankLine (&&&)" state
+                    debugIn "BlankLine" state
             in
             state
-                |> Utility.ifApply (state.currentLineData.indent <= state.initialBlockIndent && Maybe.map Block.typeOfSBlock (List.head state.stack) /= Just Block.P)
+                |> Utility.ifApply (isBlockUnterminatedAfterAddingLine state)
                     (handleUnterminatedBlock (Just "missing end tag"))
                 |> resetInVerbatimBlock
                 |> handleBlankLine
@@ -119,6 +116,16 @@ processLine language state =
 
 
 -- ORDINARY LINE
+
+
+isBlockUnterminatedAfterAddingLine : State -> Bool
+isBlockUnterminatedAfterAddingLine state =
+    state.currentLineData.indent <= state.initialBlockIndent && (Maybe.map Block.typeOfSBlock (List.head state.stack) /= Just Block.P)
+
+
+
+-- |> Utility.ifApply (state.currentLineData.indent <= state.initialBlockIndent && Maybe.map Block.typeOfSBlock (List.head state.stack) /= Just Block.P)
+--                    (handleUnterminatedBlock (Just "missing end tag"))
 
 
 handleUnterminatedBlock : Maybe String -> State -> State
@@ -140,9 +147,17 @@ handleUnterminatedBlock mStr state =
                         Just str ->
                             str
             in
-            state
-                |> postMessageWithBlockUnfinished out
-                |> Function.simpleCommit
+            if List.member name unterminatedBlockNames then
+                state
+
+            else
+                state
+                    |> postMessageWithBlockUnfinished out
+                    |> Function.simpleCommit
+
+
+unterminatedBlockNames =
+    [ "item" ]
 
 
 postMessageWithBlockUnfinished : String -> State -> State
@@ -303,6 +318,7 @@ handleBlankLine state =
                         debugRed "XXX BLANK" 3
                 in
                 -- TODO.   Can't this all be reduced to commitBlock?
+                -- TODO: No!
                 case Function.stackTop state of
                     Nothing ->
                         --- commitBlock state |> debugYellow "XXX BlankLine 3"
@@ -318,7 +334,10 @@ handleBlankLine state =
                             state
                                 |> Function.finalizeBlockStatusOfStackTop
                                 |> Function.transformLaTeXBlockInState
-                                |> Function.simpleCommit
+                                -- TODO: an idea that doesn't work: |> ifApply (List.isEmpty state.stack) Function.simpleCommit
+                                {- |> Function.simpleCommit -}
+                                -- TODO: try having function reduce handle this (should be ultimate goal anyway).
+                                |> Function.reduce
                                 |> debugYellow "XXX BlankLine 4"
 
                         else
@@ -373,7 +392,7 @@ handleVerbatimLine state =
                     -- top of the stack and create a new block.
                     state
                         |> commitBlock
-                        |> Function.pushBlockOnState
+                        |> Function.makeBlockWithCurrentLine
 
 
 
@@ -498,6 +517,9 @@ endBlock name state =
                 Just stackTopName ->
                     -- the begin and end tags match, we mark it as complete
                     -- TODO: Do we need to check the as well?
+                    -- TODO: We are making an exception for item blocks which are in some sense 'autocompletd'
+                    -- TODO: But making exceptions outside of 'Lang/*' is not good
+                    -- if name == stackTopName || stackTopName == "item" then
                     if name == stackTopName then
                         state
                             |> updateAccummulatorInStateWithBlock top

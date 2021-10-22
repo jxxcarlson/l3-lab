@@ -5,7 +5,6 @@ module Block.Function exposing
     , finalizeBlockStatus
     , finalizeBlockStatusOfStack
     , finalizeBlockStatusOfStackTop
-    , finalizeBlockStatus_
     , fixMarkdownBlock
     , getStatus
     , incrementLevel
@@ -13,11 +12,11 @@ module Block.Function exposing
     , indentationOfCurrentBlock
     , insertErrorMessage
     , liftBlockFunctiontoStateFunction
+    , makeBlockWithCurrentLine
     , mapStack
     , nameOfStackTop
     , postErrorMessage
     , pushBlock
-    , pushBlockOnState
     , pushLineIntoBlock
     , pushLineOntoStack
     , pushLineOntoStack_
@@ -49,18 +48,18 @@ import Markup.Simplify as Simplify
 import Parser.Advanced
 
 
-pushBlockOnState : State -> State
-pushBlockOnState state =
-    case makeBlock state of
+makeBlockWithCurrentLine : State -> State
+makeBlockWithCurrentLine state =
+    case makeBlock_ state of
         Nothing ->
             state
 
         Just block ->
-            pushBlock block state
+            { state | stack = block :: state.stack }
 
 
-makeBlock : State -> Maybe SBlock
-makeBlock state =
+makeBlock_ : State -> Maybe SBlock
+makeBlock_ state =
     case state.currentLineData.lineType of
         OrdinaryLine ->
             SParagraph [ state.currentLineData.content ] (newMeta state) |> Just
@@ -294,7 +293,7 @@ renderErrorMessage lang msg =
 
 recoverFromError : State -> State
 recoverFromError state =
-    { state | stack = [] } |> debugBlue "recoverFromError "
+    { state | committed = List.reverse (List.map reverseContents state.stack) ++ state.committed, stack = [] } |> debugBlue "recoverFromError "
 
 
 compress : List SBlock -> List SBlock
@@ -351,6 +350,7 @@ reduce state =
     case state.stack of
         block1 :: ((SBlock name blocks meta) as block2) :: rest ->
             if indentationOfBlock block1 > indentationOfBlock block2 then
+                -- TODO: ???
                 -- incorporate block1 into the block just below it in the stack
                 -- then reduce again
                 let
@@ -384,8 +384,14 @@ reduce state =
                     { state | committed = reverseContents (setBlockStatus BlockComplete block) :: state.committed, stack = [] } |> debugOut "REDUCE 2a, OUT"
 
             else
-                --- { state | committed = reverseContents (fbefinalizeBlockStatus block) :: state.committed, stack = [] } |> debugOut "REDUCE 2b, OUT"
+            --- { state | committed = reverseContents (fbefinalizeBlockStatus block) :: state.committed, stack = [] } |> debugOut "REDUCE 2b, OUT"
+            if
+                getStatus block == BlockComplete
+            then
                 { state | committed = reverseContents block :: state.committed, stack = [] } |> debugOut "REDUCE 2b, OUT"
+
+            else
+                state
 
         _ ->
             let
@@ -435,16 +441,6 @@ incrementLevel lineData =
     { lineData | indent = lineData.indent + quantumOfIndentation }
 
 
-finalizeBlockStatus_ : BlockStatus -> BlockStatus
-finalizeBlockStatus_ status =
-    case status of
-        BlockUnfinished _ ->
-            BlockComplete
-
-        _ ->
-            status
-
-
 finalizeBlockStatus : SBlock -> SBlock
 finalizeBlockStatus block =
     case block of
@@ -459,6 +455,16 @@ finalizeBlockStatus block =
 
         _ ->
             block
+
+
+finalizeBlockStatus_ : BlockStatus -> BlockStatus
+finalizeBlockStatus_ status =
+    case status of
+        BlockUnfinished _ ->
+            BlockComplete
+
+        _ ->
+            status
 
 
 getStatus : SBlock -> BlockStatus
@@ -540,25 +546,11 @@ pushLineIntoBlock index str block =
             block
 
 
+{-| Push the given block onto the stack
+-}
 pushBlock : SBlock -> State -> State
 pushBlock block state =
-    -- If the stack is empty, push the block onto it.
-    -- If the stack is not empty, mark the top of the stack as BlockComplete,
-    -- then push the block onto it.
-    case state.stack of
-        [] ->
-            let
-                _ =
-                    debugBlue "Running PUSHBLOCK" 1
-            in
-            { state | stack = block :: [], blockCount = state.blockCount + 1 }
-
-        next :: rest ->
-            let
-                _ =
-                    debugBlue "Running PUSHBLOCK" 2
-            in
-            { state | stack = block :: setBlockStatus BlockComplete next :: rest, blockCount = state.blockCount + 1 }
+    { state | stack = block :: state.stack }
 
 
 changeStatusOfTopOfStack : BlockStatus -> State -> State
